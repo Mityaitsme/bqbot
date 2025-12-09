@@ -26,22 +26,29 @@ class AdminService:
     f"Team {team.name} (id={team.id})\n"
     f"Stage: {team.cur_stage}\n"
     f"Score: {team.score}\n"
-    f"Members: {', '.join(m.tg_nickname for m in team.members)}"
+    f"Members: {', '.join(m.tg_nickname for m in team.members)}\n"
+    f"Last call time: {team.call_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
     # ADMIN поменять на его id через .env
-    return Message(text=text, __send_to_id=ADMIN)
+    reply = Message(text=text)
+    reply.recipient_id = ADMIN
+    return reply
 
   @staticmethod
   def get_all_teams_info() -> Message:
     teams = TeamRepo.parse_all()
     if not teams or len(teams) == 0:
-      return Message(text="No teams registered yet", __send_to_id=ADMIN)
+      reply = Message(text="No teams registered yet")
+      reply.recipient_id = ADMIN
+      return reply
 
     lines = []
     for team in teams:
       lines.append(f"{team.id}: {team.name} - stage {team.cur_stage} - score {team.score}")
     text = "All teams:\n" + "\n".join(lines)
-    return Message(text=text, __send_to_id=ADMIN)
+    reply = Message(text=text)
+    reply.recipient_id = ADMIN
+    return reply
 
   @staticmethod
   def get_scoring_system() -> Message:
@@ -50,6 +57,8 @@ class AdminService:
       "Scoring system:\n"
       "- Each correct riddle: +1 stage\n"
     )
-    return Message(message_text=text, __send_to_id=ADMIN)
+    reply = Message(text=text)
+    reply.recipient_id = ADMIN
+    return reply
 
   # Remove Notifications from the UML

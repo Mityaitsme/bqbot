@@ -62,15 +62,6 @@ class Message:
     created_at = Utils.now()
     return Message(__text=text, __files=files, __created_at=created_at)
 
-  
-  def send(self, id: Optional[int] = None) -> None:
-    if not self.recipient_id and not id:
-      raise SendMessageException("Cannot send a message without recipient's ID")
-    if not self.recipient_id:
-      self.recipient_id = id
-    Utils.send_message(self)
-    return
-
 
 @dataclass(frozen=True, slots=True)
 class Riddle:
@@ -116,7 +107,9 @@ class Team:
   __start_stage: int = 0
   __cur_stage: int = 0
   __score: int = 0
-  __call_time: int = 0
+  __call_time: datetime = field(
+    default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
+  )
   __members: List[Member] = field(default_factory=list)
 
   def verify_password(self, password: str) -> bool:

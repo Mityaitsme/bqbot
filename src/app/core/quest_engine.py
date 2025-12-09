@@ -5,6 +5,9 @@ QuestEngine - core business logic for handling riddles and team progress.
 
 from __future__ import annotations
 from .basic_classes import Message, Riddle
+import logging
+
+logger = logging.getLogger(__name__)
 
 # @staticizer
 class QuestEngine:
@@ -22,11 +25,12 @@ class QuestEngine:
     """
     team = TeamRepo.get(team_id)
     if team is None:
+      logger.exception("Error while checking answer: team %s not found", team_id)
       raise TeamError(f"Team {team_id} not found")
     riddle = RiddleRepo.get(team.cur_stage)
     if riddle is None:
+      logger.exception("Error while checking answer: riddle %s not found", team.cur_stage)
       raise RiddleError(f"Riddle for stage {team.cur_stage} not found")
-    # cast message to riddle
     return Message.from_riddle(riddle)
 
   def check_answer(self, team_id: int, message: Message) -> Message:
@@ -35,29 +39,32 @@ class QuestEngine:
     """
     team = self._team_repo.get(team_id)
     if team is None:
-      raise TeamNotFoundError(f"Team {team_id} not found")
+      logger.exception("Error while checking answer: team %s not found", team_id)
+      raise TeamError(f"Team {team_id} not found")
 
     riddle = RiddleRepo.get(team.cur_stage)
     if riddle is None:
-      raise RiddleNotFoundError(f"Riddle for stage {team.cur_stage} not found")
+      logger.exception("Error while checking answer: riddle %s not found", team.cur_stage)
+      raise RiddleError(f"Riddle for stage {team.cur_stage} not found")
 
     try:
       correct = riddle.check_answer(message)
     except Exception as exc:  # defensive: riddle check should not crash engine
-      raise InvalidAnswerError("Failed to validate answer") from exc
+      logger.exception("Error while checking answer: failed to validate answer: %s", exc)
+      raise InvalidAnswerError("Failed to validate answer")
 
     if correct:
       team.next_stage()
       TeamRepo.update(team, event="answer_correct")
       reply = Message(
-        text="Ответ верный! Переходим на следующий этап.",
-        send_to_id=message.author
+        text="Ответ верный! Переходим на следующий этап."
       )
+      reply.recipient_id = message.author
       return reply
 
-    # incorrect
+    # if the answer is incorrect
     reply = Message(
-      text="Неправильно — попробуйте ещё раз.",
-      send_to_id=message.author
+      text="Неправильно — попробуйте ещё раз."
     )
+    reply.recipient_id = message.author
     return reply
