@@ -9,7 +9,7 @@ from __future__ import annotations
 from .basic_classes import Message
 
 
-# @staticizer
+# TODO: @staticizer
 class AdminService:
   """
   This class resolves the pipeline where admin wants something from the bot.
@@ -29,7 +29,7 @@ class AdminService:
     f"Members: {', '.join(m.tg_nickname for m in team.members)}\n"
     f"Last call time: {team.call_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    # ADMIN поменять на его id через .env
+    # TODO: ADMIN поменять на его id через .env
     reply = Message(text=text)
     reply.recipient_id = ADMIN
     return reply
@@ -61,4 +61,4 @@ class AdminService:
     reply.recipient_id = ADMIN
     return reply
 
-  # Remove Notifications from the UML
+  # TODO: Remove Notifications from the UML

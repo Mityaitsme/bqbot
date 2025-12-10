@@ -1,7 +1,7 @@
 """
 QuestEngine - core business logic for handling riddles and team progress.
 """
-# ДОБАВИТЬ ТЕКСТА
+# TODO: ДОБАВИТЬ ТЕКСТА
 
 from __future__ import annotations
 from .basic_classes import Message, Riddle
@@ -9,7 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# @staticizer
+# TODO: @staticizer
 class QuestEngine:
   """
   Core engine which coordinates reading team state, validating answers and

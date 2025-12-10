@@ -20,5 +20,5 @@ class MsgSender:
       raise SendMessageException("Cannot send a message without recipient's ID")
     if not message.recipient_id:
       message.recipient_id = id
-    # add the actual sending here
+    # TODO: add the actual sending here
     logger.info(f"[SEND] → {message.recipient_id}: {message.text}")

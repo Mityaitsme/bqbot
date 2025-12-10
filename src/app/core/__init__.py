@@ -5,7 +5,7 @@ This package contains dataclasses that describe main entities (Team, Member,
 Message, Riddle) and the core services: QuestEngine (processing user's message)
 and AdminService (processing admin's message).
 """
-# ADD SOMETHING ABOUT DEPENDENCIES INTO DESCRIPTION
+# TODO: ADD SOMETHING ABOUT DEPENDENCIES INTO DESCRIPTION
 
 from .basic_classes import Member, Message, Riddle, Team
 from .quest_engine import QuestEngine

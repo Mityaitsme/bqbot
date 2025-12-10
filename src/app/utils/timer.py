@@ -23,6 +23,6 @@ class Timer:
   @staticmethod
   def time_to_int(time: datetime) -> int:
     """Counts how many seconds have passed since the beginning of the quest"""
-    # put START_TIME in .env, then uncomment the line below
-    # return int(time.timestamp() - START_TIME)
+    # TODO: put START_TIME in .env, then uncomment the line below
+    # TODO: return int(time.timestamp() - START_TIME)
     return 0 

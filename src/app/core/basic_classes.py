@@ -20,7 +20,7 @@ class Member:
   name: str
 
 
-# @generate_properties()
+# TODO: @generate_properties()
 @dataclass(slots=True)
 class Message:
   """
@@ -58,7 +58,7 @@ class Message:
   def from_riddle(cls: Message, riddle: Riddle) -> Message:
     text = riddle.question
     files = riddle.files
-    # background info maybe
+    # TODO: background info maybe
     created_at = Utils.now()
     return Message(__text=text, __files=files, __created_at=created_at)
 
@@ -94,7 +94,7 @@ class Riddle:
     return
 
 
-# @generate_properties(exclude={"_password_hash"})
+# TODO: @generate_properties(exclude={"_password_hash"})
 @dataclass(slots=True)
 class Team:
   """
@@ -123,9 +123,9 @@ class Team:
   def next_stage(self) -> None:
     """Advance to next stage and adjust score if needed."""
     self.cur_stage += 1
-    # check if it's more than maximum
+    # TODO: check if it's more than maximum
     self.score += 1
-    # update call_time
+    # TODO: update call_time
 
   def add_member(self, member: Member) -> None:
     if any(m.tg_id == member.tg_id for m in self.members):
