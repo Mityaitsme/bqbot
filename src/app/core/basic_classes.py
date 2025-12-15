@@ -15,9 +15,10 @@ class Member:
   Telegram participant in a team.
   Immutable dataclass.
   """
-  tg_id: int
+  id: int
   tg_nickname: str
   name: str
+  team: Team
 
 
 # TODO: @generate_properties()

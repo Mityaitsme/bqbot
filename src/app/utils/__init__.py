@@ -8,6 +8,5 @@ from .msg_sender import MsgSender
 
 __all__ = [
     "Timer",
-    "MsgSender",
-    "DB"
+    "MsgSender"
 ]

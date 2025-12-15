@@ -37,7 +37,7 @@ class QuestEngine:
     """
     Checks if the provided answer is correct
     """
-    team = self._team_repo.get(team_id)
+    team = TeamRepo.get(team_id)
     if team is None:
       logger.exception("Error while checking answer: team %s not found", team_id)
       raise TeamError(f"Team {team_id} not found")
@@ -55,7 +55,7 @@ class QuestEngine:
 
     if correct:
       team.next_stage()
-      TeamRepo.update(team, event="answer_correct")
+      TeamRepo.update(team, event="correct answer")
       reply = Message(
         text="Ответ верный! Переходим на следующий этап."
       )

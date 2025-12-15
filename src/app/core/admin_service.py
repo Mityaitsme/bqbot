@@ -36,7 +36,7 @@ class AdminService:
 
   @staticmethod
   def get_all_teams_info() -> Message:
-    teams = TeamRepo.parse_all()
+    teams = TeamRepo.get_all()
     if not teams or len(teams) == 0:
       reply = Message(text="No teams registered yet")
       reply.recipient_id = ADMIN
