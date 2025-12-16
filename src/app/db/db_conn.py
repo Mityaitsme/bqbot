@@ -1,44 +1,87 @@
 from __future__ import annotations
-from functools import wraps
+
 import logging
-from typing import Callable, Any
+from contextlib import contextmanager
+from typing import Any, Dict, List, Generator
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
+# TODO: insert a real URL here
+engine = create_engine(
+  DATABASE_URL,
+  pool_pre_ping=True,
+)
+
+SessionFactory = sessionmaker(bind=engine)
+
+
 class DB:
   """
-  Creates and closes DB connection around the function call.
+  Low-level DB access layer.
+  Provides atomic operations via context-managed sessions.
   """
+
   @staticmethod
-  def connect(func: Callable) -> Callable:
+  @contextmanager
+  def session() -> Generator[Session, None, None]:
+    session = SessionFactory()
+    try:
+      yield session
+      session.commit()
+    except Exception:
+      session.rollback()
+      raise
+    finally:
+      session.close()
+
+  @staticmethod
+  def select(*, table: str, where: Dict[str, Any] | None = None,
+             columns: str = "*") -> List[Dict[str, Any]]:
     """
-    Decorator that manages his classes's job.
+    Makes a SELECT query to the database via SQLAlchemy
     """
+    with DB.session() as session:
+      sql = f"SELECT {columns} FROM {table}"
+      params: Dict[str, Any] = {}
 
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> Any:
-      # specify the connection here  
+      if where:
+        conditions = []
+        for key, value in where.items():
+          conditions.append(f"{key} = :{key}")
+          params[key] = value
+        sql += " WHERE " + " AND ".join(conditions)
 
-      conn = get_connection()
-      logger.debug(f"Opening DB connection for {func.__name__}")
+      logger.debug(f"SQL SELECT: {sql} | params={params}")
 
-      try:
-        result = func(*args, conn=conn, **kwargs)
-        conn.commit()
-        logger.debug(f"Committing DB transaction in {func.__name__}")
-        return result
-      except Exception as e:
-        conn.rollback()
-        logger.error(f"Error in {func.__name__}: {e}")
-        raise
-      finally:
-        conn.close()
-        logger.debug(f"Closing DB connection in {func.__name__}")
+      result = session.execute(text(sql), params)
+      return [dict(row._mapping) for row in result]
 
-    return wrapper
-  
-  # TODO:
-  # DB.select(table=cls.table_name, where={"id": id}, column="*")
-  # DB.insert(table=cls.table_name, values=[t_str])
-  # DB.update(table=cls.table_name, id=t.id, value=t_str)
-  # DB.select(table=cls.table_name, column="*")
+  @staticmethod
+  def insert(*, table: str, values: Dict[str, Any]) -> None:
+    """
+    Makes an INSERT query to the database via SQLAlchemy
+    """
+    with DB.session() as session:
+      columns = ", ".join(values.keys())
+      placeholders = ", ".join(f":{k}" for k in values.keys())
+      sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+      logger.debug(f"SQL INSERT: {sql} | values={values}")
+      session.execute(text(sql), values)
+
+  @staticmethod
+  def update(*, table: str, id: int, values: Dict[str, Any]) -> None:
+    """
+    Makes an UPDATE query to the database via SQLAlchemy
+    """
+    with DB.session() as session:
+      assignments = ", ".join(f"{k} = :{k}" for k in values.keys())
+      params = dict(values)
+      params["id"] = id
+      sql = f"UPDATE {table} SET {assignments} WHERE id = :id"
+
+      logger.debug(f"SQL UPDATE: {sql} | values={params}")
+      session.execute(text(sql), params)

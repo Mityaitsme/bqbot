@@ -18,7 +18,7 @@ class Member:
   id: int
   tg_nickname: str
   name: str
-  team: Team
+  team_id: int
 
 
 # TODO: @generate_properties()
@@ -29,18 +29,18 @@ class Message:
   Includes all nessessary information (author, their team, recipient, text, files, other data)
   Variable `type` shows if this message contains photos&videos, voice messages, other files or just text.
   """
-  __text: str
-  __author_id: Optional[int] = None
-  __recipient_id: Optional[int] = None
-  __files: List[FileExtension] = field(default_factory=list)
-  __background_info: Dict[str, str] = field(default_factory=dict)
-  __created_at: datetime = field(
+  _text: str
+  _author_id: Optional[int] = None
+  _recipient_id: Optional[int] = None
+  _files: List[FileExtension] = field(default_factory=list)
+  _background_info: Dict[str, str] = field(default_factory=dict)
+  _created_at: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
 
-  @property.setter
+  @recipient_id.setter
   def recipient_id(self, id: int):
-    self.__recipient_id = id
+    self._recipient_id = id
     return
 
   @property
@@ -50,18 +50,18 @@ class Message:
     extensions = [f.extension for f in self.files]
     if all(ext in (".mp3", ".wav") for ext in extensions):
       return "voice"
-    elif all(ext in (".jpg", "jpeg" ".png", ".mp4") for ext in extensions):
+    elif all(ext in (".jpg", ".jpeg", ".png", ".mp4") for ext in extensions):
       return "gallery"
     else:
       return "other"
   
   @classmethod
-  def from_riddle(cls: Message, riddle: Riddle) -> Message:
+  def from_riddle(cls, riddle: Riddle) -> Message:
     text = riddle.question
     files = riddle.files
     # TODO: background info maybe
     created_at = Utils.now()
-    return Message(__text=text, __files=files, __created_at=created_at)
+    return Message(_text=text, _files=files, _created_at=created_at)
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,7 +85,7 @@ class Riddle:
     """
     if self.type == "db":
       expected = self.answer
-      got = message.get_text()
+      got = message.text()
       return expected == got
     
     # a plug if the team has finished the quest and shouldn't be moved anywhere
@@ -102,16 +102,17 @@ class Team:
   Represents a team participating in the quest.
   Actively uses @property for limited access.
   """
-  __id: int
-  __name: str
+  _id: int
+  _name: str
   __password_hash: str
-  __start_stage: int = 0
-  __cur_stage: int = 0
-  __score: int = 0
-  __call_time: datetime = field(
+  _start_stage: int = 0
+  _cur_stage: int = 0
+  _score: int = 0
+  _cur_member_id: int
+  _call_time: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
-  __members: List[Member] = field(default_factory=list)
+  _members: List[Member] = field(default_factory=list)
 
   def verify_password(self, password: str) -> bool:
     """
@@ -119,16 +120,25 @@ class Team:
     Then we just compare hash string directly.
     """
     # password = hash(password)
-    return self.__password_hash == password
+    return self._Team__password_hash == password
+  
+  @cur_member_id.setter
+  def cur_member_id(self, value):
+    self._cur_member_id = value
+    return
 
   def next_stage(self) -> None:
     """Advance to next stage and adjust score if needed."""
     self.cur_stage += 1
-    # TODO: check if it's more than maximum
+    # TODO: put stage_count to config
+    if self.cur_stage > STAGE_COUNT:
+      self.cur_stage = 1
     self.score += 1
+    self._call_time = Utils.now()
     # TODO: update call_time
 
   def add_member(self, member: Member) -> None:
-    if any(m.tg_id == member.tg_id for m in self.members):
+    if any(m.id == member.id for m in self.members):
       return
     self.members.append(member)
+    self.cur_member_id = member.id

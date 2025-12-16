@@ -8,11 +8,11 @@ Child classes specify the type parameter via Generic[T] and provide cache and qu
 
 from __future__ import annotations
 from abc import ABC
-from typing import TypeVar, Generic, Optional, List, Tuple
+from typing import TypeVar, Generic, Optional, List
 import logging
 
 from ..core import Team, Member, Riddle
-from .cache import TeamCache, MemberCache, RiddleCache, LRUCache
+from .cache import TeamCache, MemberCache, RiddleCache
 from .queries import TeamQuery, MemberQuery, RiddleQuery, Query
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class Repo(ABC, Generic[T]):
     if obj is not None:
       # Store in cache for future access
       cls.cache.put(obj)
-      logger.debug(f"Found in database and cached {T} object with id={id}")
+      logger.debug(f"Found in database and cached {cls.__name__} object with id={id}")
     else:
       logger.debug(f"No T {T} object with id={id} in database.")
     
@@ -117,14 +117,13 @@ class TeamRepo(Repo[Team]):
       logger.warning(f"Incorrect update event for TeamRepo ({event}).")
       return
 
-    team = cls.get(team)
-    if team is None:
+    team1 = cls.get(team.id)
+    if team1 is None:
       logger.warning(f"No team with id {id} found in TeamRepo.")
       return
-    team_id = team.id
-    cls.cache.update(team_id, event)
-    cls.query.update(team_id, event)
-    logger.debug(f"Updated and cached Team object with id={team_id}, event: {event}")
+    team.next_stage()
+    cls.put(team)
+    logger.debug(f"Updated and cached Team object with id={team.id}, event: {event}")
 
 
 class MemberRepo(Repo[Member]):

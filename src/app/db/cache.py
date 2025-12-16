@@ -86,20 +86,6 @@ class TeamCache(LRUCache[Team]):
   # TODO: maybe set it from .env ?
   _cache_size: int = 50
 
-  @classmethod
-  def update(cls, id: int, event: str) -> None:
-    """
-    Function that updates team's state in cache after some event.
-    The only event available for now is "correct answer", this may change in later versions
-    """
-    if event != "correct answer" or id not in cls._cache:
-      return
-    
-    team = cls._cache[id]
-    team.next_stage()
-    cls.put(team)
-    return
-
 
 class MemberCache(LRUCache[Member]):
   """

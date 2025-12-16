@@ -5,7 +5,7 @@ Query is an abstract base class that defines the interface for all query classes
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Dict, List, TypeVar, Generic
+from typing import Dict, List, TypeVar, Generic, Any
 from ..core import Team, Member, Riddle
 from .db_conn import DB
 import logging
@@ -31,8 +31,10 @@ class Query(ABC, Generic[T]):
     Gets an object via its ID.
     This implementation will be shared by all child classes.
     """
-    t = cls.parse(DB.select(table=cls.table_name, where={"id": id}, column="*"))
-    return t
+    rows = DB.select(table=cls.table_name, where={"id": id})
+    if not rows:
+      return None
+    return cls.parse(rows[0])
   
   @classmethod
   def put(cls, t: T) -> None:
@@ -40,16 +42,16 @@ class Query(ABC, Generic[T]):
     Adds a new object to the database.
     Access class-specific table_name via: cls.table_name
     """
-    t_str = cls.pack(t)
-    if not cls.get(t.id):
-      DB.insert(table=cls.table_name, values=[t_str])
+    data = cls.pack(t)
+    if cls.get(t.id) is None:
+      DB.insert(table=cls.table_name, values=data)
     else:
-      DB.update(table=cls.table_name, id=t.id, value=t_str)
+      DB.update(table=cls.table_name, id=t.id, values=data)
     return
 
   @abstractmethod
   @classmethod
-  def parse(cls, raw_data: str) -> T:
+  def parse(cls, raw_data: Dict[str, Any]) -> T:
     """
     Parses raw database data into an object with appropriate type.
     Is an abstract method, should be implemented in all child classes.
@@ -58,9 +60,9 @@ class Query(ABC, Generic[T]):
   
   @abstractmethod
   @classmethod
-  def pack(cls, object: T) -> str:
+  def pack(cls, object: T) -> Dict[str, Any]:
     """
-    Packs an object into a string that can be later used by the appropriate database.
+    Packs an object into a dictionary that can be later used by the appropriate database.
     Is an abstract method, should be implemented in all child classes.
     """
     pass
@@ -76,69 +78,51 @@ class TeamQuery(Query[Team]):
   table_name = "team"
 
   @classmethod
-  def get_by_member(cls, member_id: int) -> Team | None:
-    """
-    Get a team by member ID.
-    """
-    from .repos import MemberRepo
-    # If anything crashes, mind the circular import: it might be the problem
-    member = MemberRepo.get(member_id)
-    if member is None:
-      return None
-    team_id = member.team.id
-    if team_id is None:
-      return None
-    return cls.get(team_id)
-
-  @classmethod
   def get_all(cls) -> List[Team]:
     """
     Gets all teams from the database.
     """
-    request = f"SELECT * FROM {cls.table_name}"
-    raw_data = DB.select(table=cls.table_name, column="*")
-    raw_data_list = []
-    # TODO: parse the str containing info about all teams to a list where each line
-    # can be parsed via standart parse method
+    rows = DB.select(table=cls.table_name)
     teams = []
-    for raw_t in raw_data_list:
-      t = cls.parse(raw_t)
-      teams.append(t)
+    for row in rows:
+      try:
+        teams.append(cls.parse(row))
+      except Exception as e:
+        logger.error(f"Failed to parse team row {row}: {e}")
+
     return teams
-  
-  @classmethod
-  def update(cls, id: int, event: str) -> None:
-    """
-    Function that updates team's state in database after some event.
-    The only event available for now is "correct answer", this may change in later versions
-    """
-    if event != "correct answer":
-      return
-    
-    team = cls.get(id)
-    if not team:
-      logger.warning(f"Incorrect team for TeamQuery to update (id {id}).")
-      return
-    team.next_stage()
-    cls.put(team)
-    logger.info(f"Successfully updated team with id {id} in the database.")
-    return
 
   @classmethod
-  def parse(cls, raw_data: str) -> Team:
+  def parse(cls, raw_data: Dict[str, Any]) -> Team:
     """
-    Parses a raw database row (str) into a Team object.
+    Parses a raw database row (dict) into a Team object.
     """
-    # TODO: specify when database format is better known
-    return
+    return Team(
+      _id=raw_data["id"],
+      _name=raw_data["name"],
+      _password_hash=raw_data["password_hash"],
+      _start_stage=raw_data["start_stage"],
+      _cur_stage=raw_data["cur_stage"],
+      _score=raw_data["score"],
+      _call_time=raw_data["call_time"],
+      _cur_member_id=raw_data.get("cur_member_id"),
+    )
 
   @classmethod
-  def pack(cls, team: Team) -> str:
+  def pack(cls, team: Team) -> Dict[str, Any]:
     """
-    Packs a Team object into a string suitable for database insertion.
+    Packs a Team object into a dictionary suitable for database insertion.
     """
-    # TODO: specify when database format is better known
-    return
+    return {
+      "id": team.id,
+      "name": team.name,
+      "password_hash": team.password_hash,
+      "start_stage": team.start_stage,
+      "cur_stage": team.cur_stage,
+      "score": team.score,
+      "cur_member_id": team.cur_member_id,
+      "call_time": team.call_time,
+    }
 
 
 class MemberQuery(Query[Member]):
@@ -151,20 +135,28 @@ class MemberQuery(Query[Member]):
   table_name = "member"
 
   @classmethod
-  def parse(cls, raw_data: str) -> Member:
+  def parse(cls, raw_data: Dict[str, Any]) -> Member:
     """
-    Parses a raw database row (str) into a Member object.
+    Parses a raw database row (dict) into a Member object.
     """
-    # TODO: specify when database format is better known
-    return
+    return Member(
+    id=raw_data["id"],
+    tg_nickname=raw_data["tg_nickname"],
+    name=raw_data["name"],
+    team_id=raw_data["team_id"],  # ← только ID
+  )
 
   @classmethod
-  def pack(cls, member: Member) -> str:
+  def pack(cls, member: Member) -> Dict[str, Any]:
     """
-    Packs a Member object into a string suitable for database insertion.
+    Packs a Member object into a dictionary suitable for database insertion.
     """
-    # TODO: specify when database format is better known
-    return
+    return {
+      "id": member.id,
+      "tg_nickname": member.tg_nickname,
+      "name": member.name,
+      "team_id": member.team.id,
+    }
 
 
 class RiddleQuery(Query[Riddle]):
@@ -177,17 +169,27 @@ class RiddleQuery(Query[Riddle]):
   table_name = "riddle"
 
   @classmethod
-  def parse(cls, raw_data: str) -> Riddle:
+  def parse(cls, raw_data: Dict[str, Any]) -> Riddle:
     """
-    Parses a raw database row (str) into a Riddle object.
+    Parses a raw database row (dict) into a Riddle object.
     """
-    # TODO: specify when database format is better known
-    return
+    # TODO: a more complex way to parse question into several messages & files in later versions
+    return Riddle(
+      id=raw_data["id"],
+      question=raw_data["question"],
+      answer=raw_data["answer"],
+      type=raw_data["type"],
+      files=[],
+    )
 
   @classmethod
-  def pack(cls, riddle: Riddle) -> str:
+  def pack(cls, riddle: Riddle) -> Dict[str, Any]:
     """
-    Packs a Riddle object into a dict suitable for database insertion.
+    Packs a Riddle object into a dictionary suitable for database insertion.
     """
-    # TODO: specify when database format is better known
-    return
+    return {
+      "id": riddle.id,
+      "question": riddle.question,
+      "answer": riddle.answer,
+      "type": riddle.type,
+    }
