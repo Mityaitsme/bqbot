@@ -37,15 +37,20 @@ class Query(ABC, Generic[T]):
     return cls.parse(rows[0])
   
   @classmethod
-  def put(cls, t: T) -> int | None:
+  def insert(cls, t: T) -> int:
     """
-    Adds a new object to the database.
-    Access class-specific table_name via: cls.table_name
+    Strict INSERT. Returns the new ID.
     """
     data = cls.pack(t)
-    if t.id is None or cls.get(t.id) is None:
-      return DB.insert(table=cls.table_name, values=data)
-    DB.update(table=cls.table_name, id=t.id, values=data)
+    return DB.insert(table=cls.table_name, values=data)
+  
+  @classmethod
+  def update(cls, id: int, t: T) -> None:
+    """
+    Strict UPDATE.
+    """
+    data = cls.pack(t)
+    DB.update(table=cls.table_name, id=id, values=data)
     return
 
   @abstractmethod

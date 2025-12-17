@@ -62,13 +62,37 @@ class Repo(ABC, Generic[T]):
     return obj
 
   @classmethod
-  def put(cls, obj: T) -> None:
+  def insert(cls, obj: T) -> int:
     """
-    Adds a new object to both database and cache.
+    Inserts a new object.
+    Returns the new ID.
+    Updates the object's ID if it was None (for Teams).
     """
-    cls.query.put(obj)
+    new_id = cls.query.insert(obj)
+    
+    if hasattr(obj, "_id"): 
+      try:
+        object.__setattr__(obj, "_id", new_id)
+      except AttributeError:
+        pass
+             
     cls.cache.put(obj)
-    logger.debug(f"Added and cached {cls.__name__} object")
+    logger.debug(f"Inserted and cached {cls.__name__} object with id={new_id}")
+    return new_id
+  
+  @classmethod
+  def update(cls, obj: T) -> None:
+    """
+    ONLY UPDATES an existing object.
+    Object MUST have an ID.
+    """
+    if not obj.id:
+        logger.error(f"Try looking at {obj}")
+        raise ValueError("Cannot update object without ID")
+
+    cls.query.update(obj.id, obj)
+    cls.cache.put(obj)
+    logger.debug(f"Updated and cached {cls.__name__} object with id={obj.id}")
     return
 
 
@@ -85,14 +109,13 @@ class TeamRepo(Repo[Team]):
   def get_by_member(cls, member_id: int) -> Optional[Team]:
     """
     Gets a team by member ID.
-    First checks if member's team is cached, otherwise queries database.
     """
     # MemberRepo is defined in this same file, so no import needed
     member = MemberRepo.get(member_id)
     if member is None:
       return None
 
-    return cls.get(member.team.id)
+    return cls.get(member.team_id)
 
   @classmethod
   def get_by_name(cls, name: str) -> Optional[Team]:
@@ -110,10 +133,6 @@ class TeamRepo(Repo[Team]):
   def get_all(cls) -> List[Team]:
     """
     Gets all teams from the database as Team objects.
-    Caches all teams as they are loaded.
-    
-    Returns:
-      List of Team objects
     """
     teams = cls.query.get_all()
     return teams
@@ -122,19 +141,18 @@ class TeamRepo(Repo[Team]):
   def update(cls, team: Team, event: str) -> None:
     """
     Updates a team in the database and cache.
-    The only event available right now is "correct answer", but other options may be added later
     """
-    
     if event != "correct answer":
       logger.warning(f"Incorrect update event for TeamRepo ({event}).")
       return
 
-    team1 = cls.get(team.id)
-    if team1 is None:
-      logger.warning(f"No team with id {id} found in TeamRepo.")
+    team_db = cls.get(team.id)
+    if team_db is None:
+      logger.warning(f"No team with id {team.id} found in TeamRepo.")
       return
+    
     team.next_stage()
-    cls.put(team)
+    TeamRepo.update(team)
     logger.debug(f"Updated and cached Team object with id={team.id}, event: {event}")
 
 

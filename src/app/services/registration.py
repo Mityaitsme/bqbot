@@ -31,7 +31,7 @@ class RegistrationService:
   _contexts: dict[int, RegistrationContext] = {}
 
   @classmethod
-  def start(cls, user_id: int) -> str:
+  def start(cls, user_id: int) -> Message:
     if MemberRepo.get(user_id):
       return Message(_text="Вы уже зарегистрированы!")
 
@@ -43,7 +43,7 @@ class RegistrationService:
     return cls._ask_role_message()
 
   @classmethod
-  def handle_input(cls, user_id: int, text: str) -> str:
+  def handle_input(cls, user_id: int, text: str) -> Message:
     """
     Handles user input according to current registration step.
     """
@@ -78,7 +78,7 @@ class RegistrationService:
       raise RuntimeError("Registration not started")
 
   @classmethod
-  def _ask_role_message(cls) -> str:
+  def _ask_role_message(cls) -> Message:
     return Message(_text=
       "Вы хотите:\n"
       "1) Присоединиться к существующей команде\n"
@@ -87,7 +87,7 @@ class RegistrationService:
     )
 
   @classmethod
-  def _handle_role(cls, ctx: RegistrationContext, text: str) -> str:
+  def _handle_role(cls, ctx: RegistrationContext, text: str) -> Message:
     if text == "1":
       ctx.mode = "join"
     elif text == "2":
@@ -100,7 +100,7 @@ class RegistrationService:
     return Message(_text="Введите имя команды:")
 
   @classmethod
-  def _handle_team_name(cls, ctx: RegistrationContext, text: str) -> str:
+  def _handle_team_name(cls, ctx: RegistrationContext, text: str) -> Message:
     team_name = text.strip()
 
     if ctx.mode == "join":
@@ -115,7 +115,7 @@ class RegistrationService:
     return Message(_text=f"Подтвердите имя команды «{team_name}»? (да / нет)")
 
   @classmethod
-  def _handle_team_name_confirm(cls, ctx: RegistrationContext, text: str) -> str:
+  def _handle_team_name_confirm(cls, ctx: RegistrationContext, text: str) -> Message:
     if text.lower() not in ("да", "нет"):
       return Message(_text="Ответьте «да» или «нет»")
 
@@ -129,36 +129,34 @@ class RegistrationService:
     return Message(_text="Введите пароль:")
 
   @classmethod
-  def _handle_password(cls, ctx: RegistrationContext, text: str) -> str:
+  def _handle_password(cls, ctx: RegistrationContext, text: str) -> Message:
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(ctx.team_name)
       if not team:
         return Message(_text="Команда не найдена. Регистрация сброшена.")
 
-      if Utils.verify_password(text, team.password_hash):
+      if not team.verify_password(text):
         return Message(_text="Неверный пароль. Попробуйте ещё раз:")
 
       cls._create_member(ctx, team)
       ctx.step = RegistrationStep.DONE
-      cls._save_context(ctx)
       cls._contexts.pop(ctx.user_id, None)
       return Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
 
-    ctx.password = text
+    ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
     cls._save_context(ctx)
     return Message(_text="Повторите пароль:")
 
   @classmethod
-  def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> str:
-    if text != ctx.password:
+  def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> Message:
+    if not Utils.verify_password(text, ctx.password_hash):
       return "Пароли не совпадают. Введите пароль ещё раз:"
 
     team = cls._create_team(ctx)
     cls._create_member(ctx, team)
 
     ctx.step = RegistrationStep.DONE
-    cls._save_context(ctx)
     cls._contexts.pop(ctx.user_id, None)
     return f"Команда {team.name} успешно зарегистрирована!"
 
@@ -167,12 +165,11 @@ class RegistrationService:
     """
     Creates a new team in DB and cache.
     """
-    password_hash = Utils.hash(ctx.password)
 
     team = Team(
       _id=None,  # автоинкремент
       _name=ctx.team_name,
-      _Team__password_hash=password_hash,
+      _Team__password_hash=ctx.password_hash,
     )
 
     # атомарная операция: INSERT

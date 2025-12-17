@@ -113,15 +113,13 @@ class Team:
   _call_time: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
-  _members: List[Member] = field(default_factory=list)
 
   def verify_password(self, password: str) -> bool:
     """
     Password verification. Hash is created via function from Utils.
     Then we just compare hash string directly.
     """
-    # password = hash(password)
-    return self._Team__password_hash == password
+    return Utils.verify_password(password, self._Team__password_hash)
   
   @cur_member_id.setter
   def cur_member_id(self, value):
