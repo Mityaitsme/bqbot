@@ -1,10 +1,10 @@
 """
 QuestEngine - core business logic for handling riddles and team progress.
 """
-# TODO: ДОБАВИТЬ ТЕКСТА
 
 from __future__ import annotations
-from .basic_classes import Message, Riddle
+from .basic_classes import Message
+from ..db import TeamRepo, RiddleRepo
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class QuestEngine:
   everything to other services.
   """
   @staticmethod
-  def get_riddle(team_id: int) -> Riddle:
+  def get_riddle(team_id: int) -> Message:
     """
     Return current riddle for team by reading its stage and fetching riddle.
     """
@@ -60,12 +60,12 @@ class QuestEngine:
       reply = Message(
         text="Ответ верный! Переходим на следующий этап."
       )
-      reply.recipient_id = message.author
+      reply.recipient_id = message.author_id
       return reply
 
     # if the answer is incorrect
     reply = Message(
       text="Неправильно — попробуйте ещё раз."
     )
-    reply.recipient_id = message.author
+    reply.recipient_id = message.author_id
     return reply

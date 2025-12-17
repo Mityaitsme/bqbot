@@ -86,7 +86,7 @@ class Riddle:
     """
     if self.type == "db":
       expected = self.answer
-      got = message.text()
+      got = message.text
       return expected == got
     
     # a plug if the team has finished the quest and shouldn't be moved anywhere
@@ -134,9 +134,3 @@ class Team:
       self.cur_stage = 1
     self.score += 1
     self._call_time = Utils.now()
-
-  def add_member(self, member: Member) -> None:
-    if any(m.id == member.id for m in self.members):
-      return
-    self.members.append(member)
-    self.cur_member_id = member.id

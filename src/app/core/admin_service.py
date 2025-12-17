@@ -7,6 +7,7 @@ RiddleRepo) and formats Message objects that can be sent to admins.
 
 from __future__ import annotations
 from .basic_classes import Message
+from ..db import TeamRepo
 
 
 class AdminService:
@@ -17,7 +18,10 @@ class AdminService:
 
   @staticmethod
   def get_team_info(team_id: int) -> Message:
+    from ..db import TeamRepo, MemberRepo
+    members = MemberRepo.get_by_team(team.id)
     team = TeamRepo.get(team_id)
+    member_names = [m.tg_nickname for m in members]
     if not team:
       raise TeamNotFound(f"Team {team_id} not found")
 
@@ -25,7 +29,7 @@ class AdminService:
     f"Team {team.name} (id={team.id})\n"
     f"Stage: {team.cur_stage}\n"
     f"Score: {team.score}\n"
-    f"Members: {', '.join(m.tg_nickname for m in team.members)}\n"
+    f"Members: {', '.join(member_names)}\n"
     f"Last call time: {team.call_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
     # TODO: ADMIN поменять на его id через .env

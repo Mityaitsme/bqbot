@@ -106,7 +106,7 @@ class RegistrationService:
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(team_name)
       if not team:
-        return "Команда с таким именем не найдена. Попробуйте ещё раз:"
+        return Message(_text="Команда с таким именем не найдена. Попробуйте ещё раз:")
 
     ctx.team_name = team_name
     ctx.step = RegistrationStep.CONFIRM_TEAM_NAME
@@ -151,30 +151,29 @@ class RegistrationService:
   @classmethod
   def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> Message:
     if not Utils.verify_password(text, ctx.password_hash):
-      return "Пароли не совпадают. Введите пароль ещё раз:"
+      return Message(_text="Пароли не совпадают. Введите пароль ещё раз:")
 
     team = cls._create_team(ctx)
     cls._create_member(ctx, team)
 
     ctx.step = RegistrationStep.DONE
     cls._contexts.pop(ctx.user_id, None)
-    return f"Команда {team.name} успешно зарегистрирована!"
+    return Message(_text=f"Команда {team.name} успешно зарегистрирована!")
 
   @classmethod
   def _create_team(cls, ctx: RegistrationContext) -> Team:
     """
     Creates a new team in DB and cache.
     """
-
     team = Team(
-      _id=None,  # автоинкремент
+      _id=None,  # autoincrement
       _name=ctx.team_name,
       _Team__password_hash=ctx.password_hash,
+      _cur_member_id=ctx.user_id
     )
-
-    # атомарная операция: INSERT
-    TeamRepo.insert(team)
-
+    team._id = TeamRepo.insert(team)
+    from ..db import TeamCache
+    TeamCache.put(team)
     return team
 
   @classmethod
@@ -188,6 +187,5 @@ class RegistrationService:
       name=None,
       team_id=team.id,
     )
-
     MemberRepo.insert(member)
     return member

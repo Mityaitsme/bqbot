@@ -171,7 +171,7 @@ class MemberQuery(Query[Member]):
       "id": member.id,
       "tg_nickname": member.tg_nickname,
       "name": member.name,
-      "team_id": member.team.id,
+      "team_id": member.team_id,
     }
 
 

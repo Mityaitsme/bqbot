@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import logging
-from ..core import Message
-from typing import Optional
-import functools
+from typing import Optional, TYPE_CHECKING
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Callable, Any
 import hashlib
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+  from ..core import Message
 
 class Utils:
   """
@@ -42,7 +43,7 @@ class Utils:
 
   @staticmethod
   def verify_password(text, hashed_text):
-    return hash(text) == hashed_text
+    return Utils.hash(text) == hashed_text
 
 
 class Timer:
@@ -77,7 +78,7 @@ class MsgSender:
     Function that manages its class's job.
     """
     if not message.recipient_id and not id:
-      logger.exception("Error while sending message: cannot send a message without recipient's ID")
+      logger.error("Error while sending message: cannot send a message without recipient's ID")
       raise SendMessageException("Cannot send a message without recipient's ID")
     if not message.recipient_id:
       message.recipient_id = id

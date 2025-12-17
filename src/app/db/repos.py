@@ -13,7 +13,8 @@ import logging
 
 from ..core import Team, Member, Riddle
 from .cache import TeamCache, MemberCache, RiddleCache
-from .queries import TeamQuery, MemberQuery, RiddleQuery, Query
+from .queries import TeamQuery, MemberQuery, RiddleQuery
+from .db_conn import DB
 
 logger = logging.getLogger(__name__)
 
@@ -150,9 +151,8 @@ class TeamRepo(Repo[Team]):
     if team_db is None:
       logger.warning(f"No team with id {team.id} found in TeamRepo.")
       return
-    
-    team.next_stage()
-    TeamRepo.update(team)
+
+    super().update(team)
     logger.debug(f"Updated and cached Team object with id={team.id}, event: {event}")
 
 
@@ -164,6 +164,11 @@ class MemberRepo(Repo[Member]):
 
   cache = MemberCache
   query = MemberQuery
+
+  @classmethod
+  def get_by_team(cls, team_id: int) -> List[Member]:
+    rows = DB.select(table=cls.query.table_name, where={"team_id": team_id})
+    return [cls.query.parse(row) for row in rows]
 
 
 class RiddleRepo(Repo[Riddle]):
