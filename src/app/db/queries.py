@@ -37,16 +37,15 @@ class Query(ABC, Generic[T]):
     return cls.parse(rows[0])
   
   @classmethod
-  def put(cls, t: T) -> None:
+  def put(cls, t: T) -> int | None:
     """
     Adds a new object to the database.
     Access class-specific table_name via: cls.table_name
     """
     data = cls.pack(t)
-    if cls.get(t.id) is None:
-      DB.insert(table=cls.table_name, values=data)
-    else:
-      DB.update(table=cls.table_name, id=t.id, values=data)
+    if t.id is None or cls.get(t.id) is None:
+      return DB.insert(table=cls.table_name, values=data)
+    DB.update(table=cls.table_name, id=t.id, values=data)
     return
 
   @abstractmethod
@@ -123,6 +122,18 @@ class TeamQuery(Query[Team]):
       "cur_member_id": team.cur_member_id,
       "call_time": team.call_time,
     }
+  
+  @classmethod
+  def get_by_name(cls, name: str) -> List[Team]:
+    """
+    Gets a team by its name.
+    """
+    rows = DB.select(
+      table=cls.table_name,
+      where={"name": name}
+    )
+    return [cls.parse(row) for row in rows]
+
 
 
 class MemberQuery(Query[Member]):

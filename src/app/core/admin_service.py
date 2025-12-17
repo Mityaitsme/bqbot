@@ -9,7 +9,6 @@ from __future__ import annotations
 from .basic_classes import Message
 
 
-# TODO: @staticizer
 class AdminService:
   """
   This class resolves the pipeline where admin wants something from the bot.

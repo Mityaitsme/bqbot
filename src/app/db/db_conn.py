@@ -60,17 +60,18 @@ class DB:
       return [dict(row._mapping) for row in result]
 
   @staticmethod
-  def insert(*, table: str, values: Dict[str, Any]) -> None:
+  def insert(*, table: str, values: Dict[str, Any]) -> int:
     """
     Makes an INSERT query to the database via SQLAlchemy
     """
     with DB.session() as session:
       columns = ", ".join(values.keys())
       placeholders = ", ".join(f":{k}" for k in values.keys())
-      sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+      sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders}) RETURNING id"
 
       logger.debug(f"SQL INSERT: {sql} | values={values}")
-      session.execute(text(sql), values)
+      result = session.execute(text(sql), values)
+      return result.scalar_one()
 
   @staticmethod
   def update(*, table: str, id: int, values: Dict[str, Any]) -> None:

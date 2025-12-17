@@ -1,12 +1,12 @@
 """
 Helpful utilities for the bot.
-This package exposes common helper functions (time, db_conn, send_message etc.)
+This package exposes common helper functions (time, send_message, @generate_properties decorator etc.)
 """
 
-from .timer import Timer
-from .msg_sender import MsgSender
+from .utils import MsgSender, Timer, Utils
 
 __all__ = [
     "Timer",
-    "MsgSender"
+    "MsgSender",
+    "Utils"
 ]

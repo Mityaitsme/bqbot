@@ -95,6 +95,18 @@ class TeamRepo(Repo[Team]):
     return cls.get(member.team.id)
 
   @classmethod
+  def get_by_name(cls, name: str) -> Optional[Team]:
+    """
+    Gets a team by its name.
+    """
+    rows = cls.query.get_by_name(name)
+    if not rows:
+      return None
+    team = rows[0]
+    cls.cache.put(team)
+    return team
+
+  @classmethod
   def get_all(cls) -> List[Team]:
     """
     Gets all teams from the database as Team objects.

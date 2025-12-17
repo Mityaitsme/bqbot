@@ -9,7 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# TODO: @staticizer
+
 class QuestEngine:
   """
   Core engine which coordinates reading team state, validating answers and
@@ -18,8 +18,8 @@ class QuestEngine:
   Although it does all the main stuff, it is kept lightweight because it delegates
   everything to other services.
   """
-
-  def get_riddle(self, team_id: int) -> Riddle:
+  @staticmethod
+  def get_riddle(team_id: int) -> Riddle:
     """
     Return current riddle for team by reading its stage and fetching riddle.
     """
@@ -33,7 +33,8 @@ class QuestEngine:
       raise RiddleError(f"Riddle for stage {team.cur_stage} not found")
     return Message.from_riddle(riddle)
 
-  def check_answer(self, team_id: int, message: Message) -> Message:
+  @staticmethod
+  def check_answer(team_id: int, message: Message) -> Message:
     """
     Checks if the provided answer is correct
     """

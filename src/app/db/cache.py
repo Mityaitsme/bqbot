@@ -67,6 +67,8 @@ class LRUCache(Generic[T]):
     If item already exists, updates it and moves to end.
     """
     id = obj.id
+    if not id:
+      return
     if id in cls._cache:
       cls._cache[id] = obj
       cls._cache.move_to_end(id)

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
+from ..utils import Utils
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,7 @@ class Member:
   team_id: int
 
 
-# TODO: @generate_properties()
+@Utils.generate_properties()
 @dataclass(slots=True)
 class Message:
   """
@@ -95,14 +96,14 @@ class Riddle:
     return
 
 
-# TODO: @generate_properties(exclude={"_password_hash"})
+@Utils.generate_properties(exclude={"__password_hash"})
 @dataclass(slots=True)
 class Team:
   """
   Represents a team participating in the quest.
   Actively uses @property for limited access.
   """
-  _id: int
+  _id: int | None
   _name: str
   __password_hash: str
   _start_stage: int = 0
@@ -135,7 +136,6 @@ class Team:
       self.cur_stage = 1
     self.score += 1
     self._call_time = Utils.now()
-    # TODO: update call_time
 
   def add_member(self, member: Member) -> None:
     if any(m.id == member.id for m in self.members):
