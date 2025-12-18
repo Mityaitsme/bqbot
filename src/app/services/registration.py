@@ -43,6 +43,10 @@ class RegistrationService:
     return cls._ask_role_message()
 
   @classmethod
+  def is_active(cls, id: int) -> bool:
+    return id in cls._contexts
+
+  @classmethod
   def handle_input(cls, user_id: int, text: str) -> Message:
     """
     Handles user input according to current registration step.

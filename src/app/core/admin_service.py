@@ -63,5 +63,3 @@ class AdminService:
     reply = Message(text=text)
     reply.recipient_id = ADMIN
     return reply
-
-  # TODO: Remove Notifications from the UML
