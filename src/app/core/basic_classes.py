@@ -6,9 +6,25 @@ Contains dataclasses Team, Member, Message and Riddle.
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from ..utils import Utils
 from config import STAGE_COUNT
+
+
+@dataclass(frozen=True, slots=True)
+class FileExtension:
+  """
+  Represents a file attached to a riddle or message.
+  """
+
+  filename_extension: str
+  filedata: Any
+  creator_id: int
+  team_id: int
+  creation_time: int = field(
+    default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
+  )
+  additional_data: str = ""
 
 
 @dataclass(frozen=True)
