@@ -108,7 +108,7 @@ class TeamQuery(Query[Team]):
       _start_stage=raw_data["start_stage"],
       _cur_stage=raw_data["cur_stage"],
       _score=raw_data["score"],
-      _call_time=raw_data["call_time"],
+      _stage_call_time=raw_data["stage_call_time"],
       _cur_member_id=raw_data.get("cur_member_id"),
     )
 
@@ -125,7 +125,7 @@ class TeamQuery(Query[Team]):
       "cur_stage": team.cur_stage,
       "score": team.score,
       "cur_member_id": team.cur_member_id,
-      "call_time": team.call_time,
+      "stage_call_time": team.stage_call_time,
     }
   
   @classmethod
