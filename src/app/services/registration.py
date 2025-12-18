@@ -224,10 +224,11 @@ class RegistrationService:
     """
     Creates new member in DB and cache.
     """
+    # TODO: insert real name and nickname in later versions
     member = Member(
       id=ctx.user_id,
-      tg_nickname=None,
-      name=None,
+      tg_nickname="",
+      name="",
       team_id=team.id,
     )
     MemberRepo.insert(member)

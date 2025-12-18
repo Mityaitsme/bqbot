@@ -129,11 +129,11 @@ class Team:
   _id: int | None
   _name: str
   __password_hash: str
-  _start_stage: int = 0
-  _cur_stage: int = 0
+  _start_stage: int = 1
+  _cur_stage: int = 1
   _score: int = 0
   _cur_member_id: int
-  _call_time: datetime = field(
+  _stage_call_time: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
 
@@ -152,8 +152,7 @@ class Team:
   def next_stage(self) -> None:
     """Advance to next stage and adjust score if needed."""
     self.cur_stage += 1
-    # TODO: put stage_count to config
     if self.cur_stage > STAGE_COUNT:
       self.cur_stage = 1
     self.score += 1
-    self._call_time = Utils.now()
+    self._stage_call_time = Utils.now()
