@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from typing import Any, Dict, List, Generator
+from config import DATABASE_URL
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
-# TODO: insert a real URL here
 engine = create_engine(
   DATABASE_URL,
   pool_pre_ping=True,
@@ -27,6 +27,10 @@ class DB:
   @staticmethod
   @contextmanager
   def session() -> Generator[Session, None, None]:
+    """
+    Context manager for a database session.
+    Commits the session if no exceptions occur, otherwise rolls back.
+    """
     session = SessionFactory()
     try:
       yield session

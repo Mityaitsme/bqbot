@@ -8,6 +8,7 @@ from collections import OrderedDict
 from typing import TypeVar, Generic, Optional
 
 from ..core import Team, Member, Riddle
+from config import CACHE_SIZE, TEAM_CACHE_SIZE, RIDDLE_CACHE_SIZE, MEMBER_CACHE_SIZE
 
 T = TypeVar('T')
 
@@ -23,8 +24,7 @@ class LRUCache(Generic[T]):
   """
 
   # default cache size - can be overridden in child classes (hidden)
-  # TODO: maybe set it from .env?
-  _cache_size: int = 100
+  _cache_size: int = CACHE_SIZE
   # cache itself (hidden)
   _cache: OrderedDict[int, T] = OrderedDict()
 
@@ -38,7 +38,7 @@ class LRUCache(Generic[T]):
     # Initialize cache for the class - each subclass gets its own OrderedDict
     setattr(cls, "_cache", OrderedDict())
     # Cache size is already set in child classes that override it
-    # If not overridden, the parent's default (100) will be used
+    # If not overridden, the parent's default will be used
 
   @classmethod
   def cache(cls) -> OrderedDict[int, T]:
@@ -85,8 +85,7 @@ class TeamCache(LRUCache[Team]):
   """
 
   # Cache size for teams
-  # TODO: maybe set it from .env ?
-  _cache_size: int = 50
+  _cache_size: int = TEAM_CACHE_SIZE
 
 
 class MemberCache(LRUCache[Member]):
@@ -96,8 +95,7 @@ class MemberCache(LRUCache[Member]):
   """
 
   # Cache size for members
-  # TODO: maybe set it from .env ?
-  _cache_size: int = 100
+  _cache_size: int = MEMBER_CACHE_SIZE
 
 
 class RiddleCache(LRUCache[Riddle]):
@@ -107,5 +105,4 @@ class RiddleCache(LRUCache[Riddle]):
   """
 
   # Cache size for riddles
-  # TODO: maybe set it from .env ?
-  _cache_size: int = 100
+  _cache_size: int = RIDDLE_CACHE_SIZE

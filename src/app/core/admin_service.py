@@ -8,6 +8,8 @@ RiddleRepo) and formats Message objects that can be sent to admins.
 from __future__ import annotations
 from .basic_classes import Message
 from ..db import TeamRepo
+from config import ADMIN
+from ..exceptions import TeamNotFound
 
 
 class AdminService:
@@ -18,6 +20,9 @@ class AdminService:
 
   @staticmethod
   def get_team_info(team_id: int) -> Message:
+    """
+    Get detailed info about a specific team.
+    Raises TeamNotFound if the team does not exist."""
     from ..db import TeamRepo, MemberRepo
     members = MemberRepo.get_by_team(team.id)
     team = TeamRepo.get(team_id)
@@ -32,13 +37,15 @@ class AdminService:
     f"Members: {', '.join(member_names)}\n"
     f"Last call time: {team.call_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    # TODO: ADMIN поменять на его id через .env
     reply = Message(text=text)
     reply.recipient_id = ADMIN
     return reply
 
   @staticmethod
   def get_all_teams_info() -> Message:
+    """
+    Get brief info about all registered teams.
+    """
     teams = TeamRepo.get_all()
     if not teams or len(teams) == 0:
       reply = Message(text="No teams registered yet")
@@ -55,10 +62,13 @@ class AdminService:
 
   @staticmethod
   def get_scoring_system() -> Message:
+    """
+    Gets the description of the scoring system.
+    """
     # This will become more complex in further versions; but for now the hints and easter eggs are not available.
     text = (
       "Scoring system:\n"
-      "- Each correct riddle: +1 stage\n"
+      "- Each correct riddle: +1\n"
     )
     reply = Message(text=text)
     reply.recipient_id = ADMIN

@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Callable, Any
 import hashlib
+from config import START_TIME
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-  from ..core import Message
 
 class Utils:
   """
@@ -62,6 +58,4 @@ class Timer:
   @staticmethod
   def time_to_int(time: datetime) -> int:
     """Counts how many seconds have passed since the beginning of the quest"""
-    # TODO: put START_TIME in .env, then uncomment the line below
-    # TODO: return int(time.timestamp() - START_TIME)
-    return 0 
+    return int(time.timestamp() - START_TIME)

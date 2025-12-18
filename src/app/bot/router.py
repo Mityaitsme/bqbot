@@ -3,6 +3,7 @@ from ..db import MemberRepo, TeamRepo
 from ..services.registration import RegistrationService
 from ..core import QuestEngine
 from ..core import AdminService
+from config import ADMIN
 
 
 class Router:
@@ -12,6 +13,9 @@ class Router:
 
   @classmethod
   def route(cls, msg: Message) -> Message:
+    """
+    Routes messages to appropriate services depending on context.
+    """
     user_id = msg.user_id
     text = msg.text.strip()
 
@@ -33,11 +37,17 @@ class Router:
 
   @staticmethod
   def _is_admin(user_id: int) -> bool:
+    """
+    Checks if the user is an admin.
+    """
     # TODO: USE ADMIN ID FROM .env
     return user_id == ADMIN
 
   @classmethod
   def _route_admin(cls, msg: Message) -> Message:
+    """
+    Routes admin messages to appropriate services.
+    """
     text = msg.text.lower()
 
     if text.startswith("/info"):
@@ -58,6 +68,9 @@ class Router:
 
   @classmethod
   def _route_player(cls, msg: Message) -> Message:
+    """
+    Routes player messages to appropriate services.
+    """
     text = msg.text.lower()
     user = MemberRepo.get(msg.user_id)
     team_id = user.team_id

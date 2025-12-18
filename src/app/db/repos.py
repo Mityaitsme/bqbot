@@ -8,7 +8,7 @@ Child classes specify the type parameter via Generic[T] and provide cache and qu
 
 from __future__ import annotations
 from abc import ABC
-from typing import TypeVar, Generic, Optional, List, Literal
+from typing import TypeVar, Generic, Optional, List
 import logging
 
 from ..core import Team, Member, Riddle

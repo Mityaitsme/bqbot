@@ -7,6 +7,9 @@ from ..db import TeamRepo, MemberRepo
 from ..utils import Utils
 
 class RegistrationStep(Enum):
+  """
+  Enumeration of registration steps.
+  """
   ASK_ROLE = auto()
   ASK_TEAM_NAME = auto()
   CONFIRM_TEAM_NAME = auto()
@@ -16,6 +19,9 @@ class RegistrationStep(Enum):
 
 @dataclass
 class RegistrationContext:
+  """
+  Holds the state of a user's registration process.
+  """
   user_id: int
   step: RegistrationStep
   mode: Literal["join", "create"] | None = None
@@ -32,6 +38,9 @@ class RegistrationService:
 
   @classmethod
   def start(cls, user_id: int) -> Message:
+    """
+    Initiates registration for a user.
+    """
     if MemberRepo.get(user_id):
       return Message(_text="Вы уже зарегистрированы!")
 
@@ -44,6 +53,9 @@ class RegistrationService:
 
   @classmethod
   def is_active(cls, id: int) -> bool:
+    """
+    Checks if a user is currently in registration process.
+    """
     return id in cls._contexts
 
   @classmethod
@@ -72,10 +84,17 @@ class RegistrationService:
 
   @classmethod
   def _save_context(cls, ctx: RegistrationContext) -> None:
+    """
+    Saves or updates the registration context for a user.
+    """
     cls._contexts[ctx.user_id] = ctx
 
   @classmethod
   def _load_context(cls, user_id: int) -> RegistrationContext:
+    """
+    Loads the registration context for a user.
+    Raises RuntimeError if no context exists.
+    """
     try:
       return cls._contexts[user_id]
     except KeyError:
@@ -83,6 +102,9 @@ class RegistrationService:
 
   @classmethod
   def _ask_role_message(cls) -> Message:
+    """
+    Returns the initial message asking user to choose between joining or creating a team.
+    """
     return Message(_text=
       "Вы хотите:\n"
       "1) Присоединиться к существующей команде\n"
@@ -92,6 +114,10 @@ class RegistrationService:
 
   @classmethod
   def _handle_role(cls, ctx: RegistrationContext, text: str) -> Message:
+    """
+    Handles if the user wants to register or join a team.
+    """
+
     if text == "1":
       ctx.mode = "join"
     elif text == "2":
@@ -105,6 +131,9 @@ class RegistrationService:
 
   @classmethod
   def _handle_team_name(cls, ctx: RegistrationContext, text: str) -> Message:
+    """
+    Handles team name input and validation.
+    """
     team_name = text.strip()
 
     if ctx.mode == "join":
@@ -120,6 +149,9 @@ class RegistrationService:
 
   @classmethod
   def _handle_team_name_confirm(cls, ctx: RegistrationContext, text: str) -> Message:
+    """
+    Handles confirmation of team name.
+    """
     if text.lower() not in ("да", "нет"):
       return Message(_text="Ответьте «да» или «нет»")
 
@@ -134,6 +166,10 @@ class RegistrationService:
 
   @classmethod
   def _handle_password(cls, ctx: RegistrationContext, text: str) -> Message:
+    """
+    Handles password input.
+    """
+
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(ctx.team_name)
       if not team:
@@ -154,6 +190,9 @@ class RegistrationService:
 
   @classmethod
   def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> Message:
+    """
+    Handles password confirmation.
+    """
     if not Utils.verify_password(text, ctx.password_hash):
       return Message(_text="Пароли не совпадают. Введите пароль ещё раз:")
 
@@ -183,7 +222,7 @@ class RegistrationService:
   @classmethod
   def _create_member(cls, ctx: RegistrationContext, team: Team) -> Member:
     """
-    Creates new member and attaches to team.
+    Creates new member in DB and cache.
     """
     member = Member(
       id=ctx.user_id,

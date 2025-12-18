@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 from ..utils import Utils
+from config import STAGE_COUNT
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,9 @@ class Message:
 
   @property
   def type(self) -> str:
+    """
+    Returns message type based on attached files.
+    """
     if not self.files or len(self.files) == 0:
       return "text"
     extensions = [f.extension for f in self.files]
@@ -58,6 +62,9 @@ class Message:
   
   @classmethod
   def from_riddle(cls, riddle: Riddle) -> Message:
+    """
+    Creates a Message instance from a Riddle instance.
+    """
     text = riddle.question
     files = riddle.files
     # TODO: background info maybe

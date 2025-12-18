@@ -9,6 +9,9 @@ class MessageHandler:
 
   @staticmethod
   def from_tg(msg: TgMessage) -> Message:
+    """
+    Converts raw Telegram updates into core Message objects.
+    """
     return Message(
       user_id=msg.from_user.id,
       text=msg.text or "",

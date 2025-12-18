@@ -9,6 +9,7 @@ from typing import Dict, List, TypeVar, Generic, Any
 from ..core import Team, Member, Riddle
 from .db_conn import DB
 import logging
+from config import TEAM_TABLE_NAME, MEMBER_TABLE_NAME, RIDDLE_TABLE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class Query(ABC, Generic[T]):
   Child classes specify the type parameter to get proper type hints.
   """
 
-  # set the name of the table with required data
+  # set the name of the table
   table_name = ""
 
   @classmethod
@@ -78,8 +79,7 @@ class TeamQuery(Query[Team]):
   Inherits all methods from Query with Team type hints.
   """
 
-  # TODO: replace it with an actual table name
-  table_name = "team"
+  table_name = TEAM_TABLE_NAME
 
   @classmethod
   def get_all(cls) -> List[Team]:
@@ -147,8 +147,7 @@ class MemberQuery(Query[Member]):
   Inherits all methods from Query with Member type hints.
   """
 
-  # TODO: replace it with an actual table name
-  table_name = "member"
+  table_name = MEMBER_TABLE_NAME
 
   @classmethod
   def parse(cls, raw_data: Dict[str, Any]) -> Member:
@@ -159,7 +158,7 @@ class MemberQuery(Query[Member]):
     id=raw_data["id"],
     tg_nickname=raw_data["tg_nickname"],
     name=raw_data["name"],
-    team_id=raw_data["team_id"],  # ← только ID
+    team_id=raw_data["team_id"]
   )
 
   @classmethod
@@ -181,8 +180,7 @@ class RiddleQuery(Query[Riddle]):
   Inherits all methods from Query with Riddle type hints.
   """
 
-  # TODO: replace it with an actual table name
-  table_name = "riddle"
+  table_name = RIDDLE_TABLE_NAME
 
   @classmethod
   def parse(cls, raw_data: Dict[str, Any]) -> Riddle:

@@ -6,6 +6,7 @@ from __future__ import annotations
 from .basic_classes import Message
 from ..db import TeamRepo, RiddleRepo
 import logging
+from ..exceptions import TeamError, RiddleError, AnswerError
 
 logger = logging.getLogger(__name__)
 
