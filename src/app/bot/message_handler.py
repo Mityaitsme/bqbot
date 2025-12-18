@@ -1,29 +1,15 @@
-from ..core.quest_engine import QuestEngine
-from ..core.admin_service import AdminService
-from ..core.models import Message
-from ..services.registration import RegistrationService
-from ..db import MemberRepo
+from aiogram.types import Message as TgMessage
+from ..core import Message
 
 
-
-
-class Router:
+class MessageHandler:
   """
-  Routes Message to appropriate domain service.
+  Converts raw Telegram updates into core Message objects.
   """
-
 
   @staticmethod
-  def route(msg: Message) -> str:
-    # Registration flow has priority
-    if not MemberRepo.get_by_tg_id(msg.user_id):
-      if RegistrationService.is_active(msg.user_id):
-        return RegistrationService.handle_input(msg.user_id, msg.text)
-      return RegistrationService.start(msg.user_id)
-    # Admin logic
-    if AdminService.is_admin(msg.user_id):
-      return AdminService.handle(msg)
-
-
-    # Main quest logic
-    return QuestEngine.handle(msg)
+  def from_tg(msg: TgMessage) -> Message:
+    return Message(
+      user_id=msg.from_user.id,
+      text=msg.text or "",
+    )
