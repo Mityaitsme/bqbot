@@ -8,7 +8,7 @@ Child classes specify the type parameter via Generic[T] and provide cache and qu
 
 from __future__ import annotations
 from abc import ABC
-from typing import TypeVar, Generic, Optional, List
+from typing import TypeVar, Generic, Optional, List, Literal
 import logging
 
 from ..core import Team, Member, Riddle
@@ -88,8 +88,8 @@ class Repo(ABC, Generic[T]):
     Object MUST have an ID.
     """
     if not obj.id:
-        logger.error(f"Try looking at {obj}")
-        raise ValueError("Cannot update object without ID")
+      logger.error(f"Cannot update object without ID: {obj}")
+      raise ValueError("Cannot update object without ID")
 
     cls.query.update(obj.id, obj)
     cls.cache.put(obj)
@@ -143,7 +143,8 @@ class TeamRepo(Repo[Team]):
     """
     Updates a team in the database and cache.
     """
-    if event != "correct answer":
+    # TODO: change the way of validating event (later)
+    if event not in {"correct answer", "member switched"}:
       logger.warning(f"Incorrect update event for TeamRepo ({event}).")
       return
 

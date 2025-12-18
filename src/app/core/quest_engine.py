@@ -52,7 +52,7 @@ class QuestEngine:
       correct = riddle.check_answer(message)
     except Exception as exc:  # defensive: riddle check should not crash engine
       logger.exception("Error while checking answer: failed to validate answer: %s", exc)
-      raise InvalidAnswerError("Failed to validate answer")
+      raise AnswerError("Failed to validate answer")
 
     if correct:
       team.next_stage()

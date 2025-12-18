@@ -61,6 +61,10 @@ class Router:
     text = msg.text.lower()
     user = MemberRepo.get(msg.user_id)
     team_id = user.team_id
+    team = TeamRepo.get(team_id)
+    if team.cur_member_id != msg.user_id:
+      team.cur_member_id = msg.user_id
+      TeamRepo.update(team, event="member switched")
     if text == "/riddle":
       return QuestEngine.get_riddle(team_id)
 
