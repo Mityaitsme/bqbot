@@ -38,11 +38,17 @@ class Utils:
     return hashlib.sha256(s.encode()).hexdigest()
 
   @staticmethod
-  def verify_password(text, hashed_text):
+  def verify_password(text: str, hashed_text: str):
+    """
+    Compares the given password to the correct hashed password.
+    """
     return Utils.hash(text) == hashed_text
   
   @staticmethod
-  def normalize(text):
+  def normalize(text: str):
+    """
+    Turns a string to lowercase; deletes double spacings.
+    """
     text = text.lower()
     text = " ".join(text.split())
     return text
