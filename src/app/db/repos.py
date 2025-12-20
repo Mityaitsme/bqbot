@@ -136,6 +136,7 @@ class TeamRepo(Repo[Team]):
     Gets all teams from the database as Team objects.
     """
     teams = cls.query.get_all()
+    teams.sort(key=lambda team: team.score, reverse=True)
     return teams
 
   @classmethod
@@ -144,7 +145,7 @@ class TeamRepo(Repo[Team]):
     Updates a team in the database and cache.
     """
     # TODO: change the way of validating event (later)
-    if event not in {"correct answer", "member switched"}:
+    if event not in {"correct answer", "member switched", "added id"}:
       logger.warning(f"Incorrect update event for TeamRepo ({event}).")
       return
 

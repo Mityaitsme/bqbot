@@ -1,9 +1,10 @@
+from __future__ import annotations
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Literal
 
 from ..core import Message, Team, Member
-from ..db import TeamRepo, MemberRepo
+from ..db import TeamRepo, MemberRepo, RiddleRepo
 from ..utils import Utils
 
 class RegistrationStep(Enum):
@@ -37,7 +38,7 @@ class RegistrationService:
   _contexts: dict[int, RegistrationContext] = {}
 
   @classmethod
-  def start(cls, user_id: int) -> Message:
+  def _start(cls, user_id: int) -> Message:
     """
     Initiates registration for a user.
     """
@@ -64,6 +65,9 @@ class RegistrationService:
     Handles user input according to current registration step.
     """
     ctx = cls._load_context(user_id)
+
+    if ctx is None:
+      return cls._start(user_id)
 
     if ctx.step == RegistrationStep.ASK_ROLE:
       return cls._handle_role(ctx, text)
@@ -98,7 +102,7 @@ class RegistrationService:
     try:
       return cls._contexts[user_id]
     except KeyError:
-      raise RuntimeError("Registration not started")
+      return None
 
   @classmethod
   def _ask_role_message(cls) -> Message:
@@ -140,7 +144,14 @@ class RegistrationService:
       team = TeamRepo.get_by_name(team_name)
       if not team:
         return Message(_text="Команда с таким именем не найдена. Попробуйте ещё раз:")
+      ctx.team_name = team_name
+      ctx.step = RegistrationStep.ASK_PASSWORD
+      cls._save_context(ctx)
+      return Message(_text="Введите пароль:")
 
+    team = TeamRepo.get_by_name(team_name)
+    if team is not None:
+      return Message(_text="К сожалению, это имя уже занято. Попробуйте какое-нибудь другое.")
     ctx.team_name = team_name
     ctx.step = RegistrationStep.CONFIRM_TEAM_NAME
     cls._save_context(ctx)
@@ -181,7 +192,10 @@ class RegistrationService:
       cls._create_member(ctx, team)
       ctx.step = RegistrationStep.DONE
       cls._contexts.pop(ctx.user_id, None)
-      return Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
+      # return Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
+      # TODO: first send the "successful registration" message, then the riddle
+      cur_riddle = RiddleRepo.get(team.cur_stage)
+      return Message.from_riddle(cur_riddle)
 
     ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
@@ -201,7 +215,10 @@ class RegistrationService:
 
     ctx.step = RegistrationStep.DONE
     cls._contexts.pop(ctx.user_id, None)
-    return Message(_text=f"Команда {team.name} успешно зарегистрирована!")
+    # return Message(_text=f"Команда {team.name} успешно зарегистрирована!")
+    # TODO: first send the "successful registration" message, then the riddle
+    cur_riddle = RiddleRepo.get(team.cur_stage)
+    return Message.from_riddle(cur_riddle)
 
   @classmethod
   def _create_team(cls, ctx: RegistrationContext) -> Team:
@@ -215,8 +232,7 @@ class RegistrationService:
       _cur_member_id=ctx.user_id
     )
     team._id = TeamRepo.insert(team)
-    from ..db import TeamCache
-    TeamCache.put(team)
+    TeamRepo.update(team, event="added id")
     return team
 
   @classmethod

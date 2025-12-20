@@ -58,15 +58,19 @@ class QuestEngine:
     if correct:
       team.next_stage()
       TeamRepo.update(team, event="correct answer")
+      # TODO: first send the "correct!" message, then the riddle
       reply = Message(
-        text="Ответ верный! Переходим на следующий этап."
+        _text="Ответ верный! Переходим на следующий этап."
       )
-      reply.recipient_id = message.author_id
+      # reply.recipient_id = message.recipient_id
+      new_riddle = RiddleRepo.get(team.cur_stage)
+      reply = Message.from_riddle(new_riddle)
+      reply.recipient_id = message.recipient_id
       return reply
 
     # if the answer is incorrect
     reply = Message(
-      text="Неправильно — попробуйте ещё раз."
+      _text="Неправильно — попробуйте ещё раз."
     )
-    reply.recipient_id = message.author_id
+    reply.recipient_id = message.recipient_id
     return reply

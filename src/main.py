@@ -3,8 +3,8 @@ from logging.config import dictConfig
 
 from aiogram import Bot, Dispatcher
 
-from config import BOT_TOKEN
-from app.bot.handlers import tg_router
+from .app.bot import tg_router
+from .config import BOT_TOKEN
 
 
 LOGGING_CONFIG = {

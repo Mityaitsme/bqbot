@@ -7,8 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
-from ..utils import Utils
-from config import STAGE_COUNT
+from ..utils import Utils, Timer
+from ...config import STAGE_COUNT
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,7 +48,7 @@ class Message:
   Variable `type` shows if this message contains photos&videos, voice messages, other files or just text.
   """
   _text: str
-  _author_id: Optional[int] = None
+  _user_id: Optional[int] = None
   _recipient_id: Optional[int] = None
   _files: List[FileExtension] = field(default_factory=list)
   _background_info: Dict[str, str] = field(default_factory=dict)
@@ -56,9 +56,22 @@ class Message:
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
 
+  @property
+  def recipient_id(self):
+    return self._recipient_id
+
   @recipient_id.setter
   def recipient_id(self, id: int):
     self._recipient_id = id
+    return
+  
+  @property
+  def user_id(self):
+    return self._user_id
+
+  @user_id.setter
+  def user_id(self, id: int):
+    self._user_id = id
     return
 
   @property
@@ -84,11 +97,11 @@ class Message:
     text = riddle.question
     files = riddle.files
     # TODO: background info maybe
-    created_at = Utils.now()
+    created_at = Timer.now()
     return Message(_text=text, _files=files, _created_at=created_at)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, frozen=True)
 class Riddle:
   """
   Immutable riddle definition.
@@ -97,8 +110,8 @@ class Riddle:
   """
   id: int
   question: str
-  files: List[FileExtension] = field(default_factory=list)
   answer: str
+  files: List[FileExtension] = field(default_factory=list)
   type: str = "db"
 
   def check_answer(self, message: Message) -> bool:
@@ -108,8 +121,8 @@ class Riddle:
     Expect `verification` and other types of riddles in later versions of this bot.
     """
     if self.type == "db":
-      expected = self.answer
-      got = message.text
+      expected = Utils.normalize(self.answer)
+      got = Utils.normalize(message.text)
       return expected == got
     
     # a plug if the team has finished the quest and shouldn't be moved anywhere
@@ -119,7 +132,7 @@ class Riddle:
     return
 
 
-@Utils.generate_properties(exclude={"__password_hash"})
+@Utils.generate_properties()
 @dataclass(slots=True)
 class Team:
   """
@@ -128,11 +141,11 @@ class Team:
   """
   _id: int | None
   _name: str
+  _cur_member_id: int
   __password_hash: str
   _start_stage: int = 1
   _cur_stage: int = 1
   _score: int = 0
-  _cur_member_id: int
   _stage_call_time: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
@@ -144,15 +157,19 @@ class Team:
     """
     return Utils.verify_password(password, self._Team__password_hash)
   
+  @property
+  def cur_member_id(self):
+    return self._cur_member_id
+
   @cur_member_id.setter
-  def cur_member_id(self, value):
+  def cur_member_id(self, value: int):
     self._cur_member_id = value
     return
 
   def next_stage(self) -> None:
     """Advance to next stage and adjust score if needed."""
-    self.cur_stage += 1
+    self._cur_stage += 1
     if self.cur_stage > STAGE_COUNT:
-      self.cur_stage = 1
-    self.score += 1
-    self._stage_call_time = Utils.now()
+      self._cur_stage = 1
+    self._score += 1
+    self._stage_call_time = Timer.now()

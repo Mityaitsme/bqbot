@@ -6,10 +6,11 @@ Query is an abstract base class that defines the interface for all query classes
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Dict, List, TypeVar, Generic, Any
+from datetime import datetime, timezone, timedelta
 from ..core import Team, Member, Riddle
 from .db_conn import DB
 import logging
-from config import TEAM_TABLE_NAME, MEMBER_TABLE_NAME, RIDDLE_TABLE_NAME
+from ...config import TEAM_TABLE_NAME, MEMBER_TABLE_NAME, RIDDLE_TABLE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,8 @@ class Query(ABC, Generic[T]):
     DB.update(table=cls.table_name, id=id, values=data)
     return
 
-  @abstractmethod
   @classmethod
+  @abstractmethod
   def parse(cls, raw_data: Dict[str, Any]) -> T:
     """
     Parses raw database data into an object with appropriate type.
@@ -63,8 +64,8 @@ class Query(ABC, Generic[T]):
     """
     pass
   
-  @abstractmethod
   @classmethod
+  @abstractmethod
   def pack(cls, object: T) -> Dict[str, Any]:
     """
     Packs an object into a dictionary that can be later used by the appropriate database.
@@ -101,14 +102,29 @@ class TeamQuery(Query[Team]):
     """
     Parses a raw database row (dict) into a Team object.
     """
+    # parsing time to datetime format
+    stage_call_time_str = raw_data["stage_call_time"]
+    if isinstance(stage_call_time_str, datetime):
+      stage_call_time = stage_call_time_str
+    else:
+      try:
+        # ISO
+        stage_call_time = datetime.fromisoformat(stage_call_time_str)
+      except:
+        try:
+          stage_call_time = datetime.fromtimestamp(float(stage_call_time_str))
+        except:
+          stage_call_time = datetime.now(timezone(timedelta(hours=3)))
+          logger.error(f"Failed to parse time for team {raw_data["name"]}.")
+
     return Team(
       _id=raw_data["id"],
       _name=raw_data["name"],
-      _password_hash=raw_data["password_hash"],
+      _Team__password_hash=raw_data["password_hash"],
       _start_stage=raw_data["start_stage"],
       _cur_stage=raw_data["cur_stage"],
       _score=raw_data["score"],
-      _stage_call_time=raw_data["stage_call_time"],
+      _stage_call_time=stage_call_time,
       _cur_member_id=raw_data.get("cur_member_id"),
     )
 
@@ -117,15 +133,21 @@ class TeamQuery(Query[Team]):
     """
     Packs a Team object into a dictionary suitable for database insertion.
     """
+    # packing datetime to time
+    if isinstance(team.stage_call_time, datetime):
+        stage_call_time_str = team.stage_call_time.isoformat()
+    else:
+        stage_call_time_str = str(team.stage_call_time)
+
     return {
       "id": team.id,
       "name": team.name,
-      "password_hash": team.password_hash,
+      "password_hash": team._Team__password_hash,
       "start_stage": team.start_stage,
       "cur_stage": team.cur_stage,
       "score": team.score,
       "cur_member_id": team.cur_member_id,
-      "stage_call_time": team.stage_call_time,
+      "stage_call_time": stage_call_time_str,
     }
   
   @classmethod

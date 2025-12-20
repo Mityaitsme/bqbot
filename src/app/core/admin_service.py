@@ -8,7 +8,7 @@ RiddleRepo) and formats Message objects that can be sent to admins.
 from __future__ import annotations
 from .basic_classes import Message
 from ..db import TeamRepo
-from config import ADMIN
+from ...config import ADMIN
 from ..exceptions import TeamNotFound
 
 
@@ -19,25 +19,26 @@ class AdminService:
   """
 
   @staticmethod
-  def get_team_info(team_id: int) -> Message:
+  def get_team_info(team_name: str) -> Message:
     """
     Get detailed info about a specific team.
     Raises TeamNotFound if the team does not exist."""
     from ..db import TeamRepo, MemberRepo
+    team = TeamRepo.get_by_name(team_name)
     members = MemberRepo.get_by_team(team.id)
-    team = TeamRepo.get(team_id)
+    print(members)
     member_names = [m.tg_nickname for m in members]
     if not team:
-      raise TeamNotFound(f"Team {team_id} not found")
+      raise TeamNotFound(f"Team {team.id} not found")
 
     text = (
     f"Team {team.name} (id={team.id})\n"
     f"Stage: {team.cur_stage}\n"
     f"Score: {team.score}\n"
     f"Members: {', '.join(member_names)}\n"
-    f"Last call time: {team.call_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    f"Last call time: {team.stage_call_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    reply = Message(text=text)
+    reply = Message(_text=text)
     reply.recipient_id = ADMIN
     return reply
 
@@ -48,7 +49,7 @@ class AdminService:
     """
     teams = TeamRepo.get_all()
     if not teams or len(teams) == 0:
-      reply = Message(text="No teams registered yet")
+      reply = Message(_text="No teams registered yet")
       reply.recipient_id = ADMIN
       return reply
 
@@ -56,7 +57,7 @@ class AdminService:
     for team in teams:
       lines.append(f"{team.id}: {team.name} - stage {team.cur_stage} - score {team.score}")
     text = "All teams:\n" + "\n".join(lines)
-    reply = Message(text=text)
+    reply = Message(_text=text)
     reply.recipient_id = ADMIN
     return reply
 
@@ -70,6 +71,6 @@ class AdminService:
       "Scoring system:\n"
       "- Each correct riddle: +1\n"
     )
-    reply = Message(text=text)
+    reply = Message(_text=text)
     reply.recipient_id = ADMIN
     return reply

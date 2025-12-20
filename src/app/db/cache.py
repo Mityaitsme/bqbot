@@ -8,7 +8,7 @@ from collections import OrderedDict
 from typing import TypeVar, Generic, Optional
 
 from ..core import Team, Member, Riddle
-from config import CACHE_SIZE, TEAM_CACHE_SIZE, RIDDLE_CACHE_SIZE, MEMBER_CACHE_SIZE
+from ...config import CACHE_SIZE, TEAM_CACHE_SIZE, RIDDLE_CACHE_SIZE, MEMBER_CACHE_SIZE
 
 T = TypeVar('T')
 

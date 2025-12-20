@@ -4,7 +4,7 @@ import logging
 import logging
 from datetime import datetime, timezone, timedelta
 import hashlib
-from config import START_TIME
+from ...config import START_TIME
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,12 @@ class Utils:
   @staticmethod
   def verify_password(text, hashed_text):
     return Utils.hash(text) == hashed_text
+  
+  @staticmethod
+  def normalize(text):
+    text = text.lower()
+    text = " ".join(text.split())
+    return text
 
 
 class Timer:

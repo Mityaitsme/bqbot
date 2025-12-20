@@ -3,7 +3,7 @@ from ..db import MemberRepo, TeamRepo
 from ..services.registration import RegistrationService
 from ..core import QuestEngine
 from ..core import AdminService
-from config import ADMIN
+from ...config import ADMIN
 
 
 class Router:
@@ -21,26 +21,26 @@ class Router:
 
     # 1. Admin commands
     if cls._is_admin(user_id):
-      return cls._route_admin(msg)
+      reply = cls._route_admin(msg)
 
-    # 2. User is not registered
-    member = MemberRepo.get(user_id)
-    if member is None:
-      return RegistrationService.start(user_id)
+    # 2. Registration
+    elif MemberRepo.get(user_id) is None:
+      reply = RegistrationService.handle_input(user_id, text)
 
-    # 3. Registration in progress
-    if RegistrationService.is_active(user_id):
-      return RegistrationService.handle_input(user_id, text)
+    # 3. Regular player
+    else:
+      reply = cls._route_player(msg)
 
-    # 4. Regular player
-    return cls._route_player(msg)
+    if reply.user_id is None:
+      reply.user_id = user_id
+    
+    return reply
 
   @staticmethod
   def _is_admin(user_id: int) -> bool:
     """
     Checks if the user is an admin.
     """
-    # TODO: USE ADMIN ID FROM .env
     return user_id == ADMIN
 
   @classmethod
@@ -50,20 +50,20 @@ class Router:
     """
     text = msg.text.lower()
 
-    if text.startswith("/info"):
-      team_name = int(text.split(" ")[1])
-      team_id = TeamRepo.get_by_name(team_name)
-      return AdminService.get_team_info(team_id)
-
-    if text.startswith("/info_all"):
+    # TODO: put admin commands somewhere out of code
+    if text == "/info_all":
       return AdminService.get_all_teams_info()
 
-    if text.startswith("/scoring_system"):
+    if text.startswith("/info "):
+      team_name = text.split(" ")[1]
+      return AdminService.get_team_info(team_name)
+
+    if text == "/scoring_system":
       return AdminService.get_scoring_system()
 
     return Message(
-      user_id=msg.user_id,
-      text="Неизвестная админ-команда",
+      _user_id=msg.user_id,
+      _text="Неизвестная админ-команда",
     )
 
   @classmethod
@@ -82,4 +82,4 @@ class Router:
       return QuestEngine.get_riddle(team_id)
 
     # otherwise - handling answer
-    return QuestEngine.handle_answer(team_id, msg)
+    return QuestEngine.check_answer(team_id, msg)

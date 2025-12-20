@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from typing import Any, Dict, List, Generator
-from config import DATABASE_URL
+from ...config import DATABASE_URL
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
