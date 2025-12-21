@@ -81,7 +81,7 @@ class Message:
     """
     if not self.files or len(self.files) == 0:
       return "text"
-    extensions = [f.extension for f in self.files]
+    extensions = [f.filename_extension for f in self.files]
     if all(ext in (".mp3", ".wav") for ext in extensions):
       return "voice"
     elif all(ext in (".jpg", ".jpeg", ".png", ".mp4") for ext in extensions):

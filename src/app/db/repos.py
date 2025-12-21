@@ -145,7 +145,7 @@ class TeamRepo(Repo[Team]):
     Updates a team in the database and cache.
     """
     # TODO: change the way of validating event (later)
-    if event not in {"correct answer", "member switched", "added id"}:
+    if event not in {"correct answer", "member switched", "added id", "testing_event"}:
       logger.warning(f"Incorrect update event for TeamRepo ({event}).")
       return
 

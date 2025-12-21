@@ -51,6 +51,14 @@ class RegistrationService:
     )
     cls._save_context(ctx)
     return cls._ask_role_message()
+  
+  @classmethod
+  def _clear_contexts(cls) -> None:
+    """
+    Deletes everything from the local _contexts dictionary.
+    """
+    cls._contexts: dict[int, RegistrationContext] = {}
+    return
 
   @classmethod
   def is_active(cls, id: int) -> bool:
@@ -183,8 +191,6 @@ class RegistrationService:
 
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(ctx.team_name)
-      if not team:
-        return Message(_text="Команда не найдена. Регистрация сброшена.")
 
       if not team.verify_password(text):
         return Message(_text="Неверный пароль. Попробуйте ещё раз:")

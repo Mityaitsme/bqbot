@@ -3,8 +3,9 @@ This layer is responsible for processes. It is only registration for now, but in
 versions other processes may be added (verification, notification etc.)
 """
 
-from .registration import RegistrationService
+from .registration import RegistrationService, RegistrationStep
 
 __all__ = [
-    "RegistrationService"
+    "RegistrationService",
+    "RegistrationStep" # for tests
 ]

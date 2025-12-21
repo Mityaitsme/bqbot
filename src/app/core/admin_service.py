@@ -7,7 +7,7 @@ RiddleRepo) and formats Message objects that can be sent to admins.
 
 from __future__ import annotations
 from .basic_classes import Message
-from ..db import TeamRepo
+from ..db import TeamRepo, MemberRepo
 from ...config import ADMIN
 from ..exceptions import TeamNotFound
 
@@ -23,14 +23,13 @@ class AdminService:
     """
     Get detailed info about a specific team.
     Raises TeamNotFound if the team does not exist."""
-    from ..db import TeamRepo, MemberRepo
     team = TeamRepo.get_by_name(team_name)
+    if not team:
+      raise TeamNotFound(f"Team {team_name} not found")
+
     members = MemberRepo.get_by_team(team.id)
     print(members)
     member_names = [m.tg_nickname for m in members]
-    if not team:
-      raise TeamNotFound(f"Team {team.id} not found")
-
     text = (
     f"Team {team.name} (id={team.id})\n"
     f"Stage: {team.cur_stage}\n"
