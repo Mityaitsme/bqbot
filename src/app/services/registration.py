@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum, auto
 from dataclasses import dataclass
-from typing import Literal
+from typing import List, Literal
 
 from ..core import Message, Team, Member
 from ..db import TeamRepo, MemberRepo, RiddleRepo
@@ -57,7 +57,7 @@ class RegistrationService:
     """
     Deletes everything from the local _contexts dictionary.
     """
-    cls._contexts: dict[int, RegistrationContext] = {}
+    cls._contexts.clear()
     return
 
   @classmethod
@@ -184,7 +184,7 @@ class RegistrationService:
     return Message(_text="Введите пароль:")
 
   @classmethod
-  def _handle_password(cls, ctx: RegistrationContext, text: str) -> Message:
+  def _handle_password(cls, ctx: RegistrationContext, text: str) -> List[Message]:
     """
     Handles password input.
     """
@@ -198,10 +198,9 @@ class RegistrationService:
       cls._create_member(ctx, team)
       ctx.step = RegistrationStep.DONE
       cls._contexts.pop(ctx.user_id, None)
-      # return Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
-      # TODO: first send the "successful registration" message, then the riddle
+      msg1 = Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
       cur_riddle = RiddleRepo.get(team.cur_stage)
-      return Message.from_riddle(cur_riddle)
+      return [msg1, Message.from_riddle(cur_riddle)]
 
     ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
@@ -209,7 +208,7 @@ class RegistrationService:
     return Message(_text="Повторите пароль:")
 
   @classmethod
-  def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> Message:
+  def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> List[Message]:
     """
     Handles password confirmation.
     """
@@ -221,10 +220,9 @@ class RegistrationService:
 
     ctx.step = RegistrationStep.DONE
     cls._contexts.pop(ctx.user_id, None)
-    # return Message(_text=f"Команда {team.name} успешно зарегистрирована!")
-    # TODO: first send the "successful registration" message, then the riddle
+    msg1 = Message(_text=f"Команда {team.name} успешно зарегистрирована!")
     cur_riddle = RiddleRepo.get(team.cur_stage)
-    return Message.from_riddle(cur_riddle)
+    return [msg1, Message.from_riddle(cur_riddle)]
 
   @classmethod
   def _create_team(cls, ctx: RegistrationContext) -> Team:

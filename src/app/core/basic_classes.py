@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
+from aiogram import Bot
+
 from ..utils import Utils, Timer
 from ...config import STAGE_COUNT
 
@@ -50,6 +52,7 @@ class Message:
   _text: str
   _user_id: Optional[int] = None
   _recipient_id: Optional[int] = None
+  _bot: Optional[Bot] = None
   _files: List[FileExtension] = field(default_factory=list)
   _background_info: Dict[str, str] = field(default_factory=dict)
   _created_at: datetime = field(
@@ -89,6 +92,17 @@ class Message:
     else:
       return "other"
   
+  def copy(self) -> Message:
+    return Message(
+      _text=self.text,
+      _user_id=self.user_id,
+      _recipient_id=self.recipient_id,
+      _bot=self.bot,
+      _files=self.files,
+      _background_info=self.background_info,
+      _created_at=self.created_at
+    )
+  
   @classmethod
   def from_riddle(cls, riddle: Riddle) -> Message:
     """
@@ -113,6 +127,11 @@ class Riddle:
   answer: str
   files: List[FileExtension] = field(default_factory=list)
   type: str = "db"
+
+  def verification_type(self):
+    if self.type == "verification":
+      return True
+    return False
 
   def check_answer(self, message: Message) -> bool:
     """

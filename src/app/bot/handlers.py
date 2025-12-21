@@ -4,7 +4,7 @@ import logging
 
 from .message_handler import MessageHandler
 from .router import Router
-from .sender import send_message
+from .sender import send_messages
 
 tg_router = TgRouter()
 logger = logging.getLogger(__name__)
@@ -20,4 +20,4 @@ async def handle_message(msg: TgMessage) -> None:
   """
   core_msg = MessageHandler.from_tg(msg)
   response = Router.route(core_msg)
-  await send_message(msg.bot, response)
+  await send_messages(response, msg.bot)

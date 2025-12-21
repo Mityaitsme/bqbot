@@ -1,4 +1,5 @@
 from aiogram.types import Message as TgMessage
+from aiogram import Bot
 from ..core import Message
 
 
@@ -15,4 +16,5 @@ class MessageHandler:
     return Message(
       _user_id=msg.from_user.id,
       _text=msg.text or "",
+      _bot = msg.bot
     )

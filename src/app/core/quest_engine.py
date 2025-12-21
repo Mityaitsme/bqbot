@@ -3,7 +3,8 @@ QuestEngine - core business logic for handling riddles and team progress.
 """
 
 from __future__ import annotations
-from .basic_classes import Message
+from typing import List
+from .basic_classes import Message, Team
 from ..db import TeamRepo, RiddleRepo
 import logging
 from ..exceptions import TeamError, RiddleError, AnswerError
@@ -20,7 +21,7 @@ class QuestEngine:
   everything to other services.
   """
   @staticmethod
-  def get_riddle(team_id: int) -> Message:
+  def get_riddle(team_id: int) -> Message | List[Message]:
     """
     Return current riddle for team by reading its stage and fetching riddle.
     """
@@ -32,10 +33,11 @@ class QuestEngine:
     if riddle is None:
       logger.exception("Error while checking answer: riddle %s not found", team.cur_stage)
       raise RiddleError(f"Riddle for stage {team.cur_stage} not found")
+    # TODO: fix when riddles will be made from several files
     return Message.from_riddle(riddle)
 
   @staticmethod
-  def check_answer(team_id: int, message: Message) -> Message:
+  def check_answer(team_id: int, message: Message) -> Message | List[Message]:
     """
     Checks if the provided answer is correct
     """
@@ -56,21 +58,30 @@ class QuestEngine:
       raise AnswerError("Failed to validate answer")
 
     if correct:
-      team.next_stage()
-      TeamRepo.update(team, event="correct answer")
-      # TODO: first send the "correct!" message, then the riddle
-      reply = Message(
-        _text="Ответ верный! Переходим на следующий этап."
-      )
-      # reply.recipient_id = message.recipient_id
-      new_riddle = RiddleRepo.get(team.cur_stage)
-      reply = Message.from_riddle(new_riddle)
-      reply.recipient_id = message.recipient_id
-      return reply
-
+      return QuestEngine.correct_answer_pipeline(team)
+      
     # if the answer is incorrect
+    return QuestEngine.wrong_answer_pipeline(team)
+  
+  @staticmethod
+  def correct_answer_pipeline(team: Team) -> List[Message]:
+    team.next_stage()
+    TeamRepo.update(team, event="correct answer")
+    # TODO: first send the "correct!" message, then the riddle
+    reply1 = Message(
+      _text="Ответ верный! Переходим на следующий этап."
+    )
+    reply1.recipient_id = team.cur_member_id
+    new_riddle = RiddleRepo.get(team.cur_stage)
+    reply2 = Message.from_riddle(new_riddle)
+    reply2.recipient_id = team.cur_member_id
+    reply = [reply1, reply2]
+    return reply
+  
+  @staticmethod
+  def wrong_answer_pipeline(team: Team) -> List[Message]:
     reply = Message(
       _text="Неправильно — попробуйте ещё раз."
     )
-    reply.recipient_id = message.recipient_id
-    return reply
+    reply.recipient_id = team.cur_member_id
+    return [reply]

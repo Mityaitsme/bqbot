@@ -4,8 +4,10 @@ versions other processes may be added (verification, notification etc.)
 """
 
 from .registration import RegistrationService, RegistrationStep
+from .verification import VerificationService
 
 __all__ = [
     "RegistrationService",
+    "VerificationService",
     "RegistrationStep" # for tests
 ]

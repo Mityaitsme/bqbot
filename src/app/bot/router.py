@@ -1,6 +1,7 @@
+from typing import List
 from ..core import Message
-from ..db import MemberRepo, TeamRepo
-from ..services.registration import RegistrationService
+from ..db import MemberRepo, TeamRepo, RiddleRepo
+from ..services import RegistrationService, VerificationService
 from ..core import QuestEngine
 from ..core import AdminService
 from ...config import ADMIN
@@ -12,7 +13,7 @@ class Router:
   """
 
   @classmethod
-  def route(cls, msg: Message) -> Message:
+  def route(cls, msg: Message) -> List[Message]:
     """
     Routes messages to appropriate services depending on context.
     """
@@ -31,9 +32,10 @@ class Router:
     else:
       reply = cls._route_player(msg)
 
-    if reply.user_id is None:
-      reply.user_id = user_id
-    
+    if isinstance(reply, Message):
+      reply = [reply]
+    for message in reply:
+      message.recipient_id = user_id
     return reply
 
   @staticmethod
@@ -44,7 +46,7 @@ class Router:
     return user_id == ADMIN
 
   @classmethod
-  def _route_admin(cls, msg: Message) -> Message:
+  def _route_admin(cls, msg: Message) -> Message | List[Message]:
     """
     Routes admin messages to appropriate services.
     """
@@ -57,6 +59,10 @@ class Router:
     if text.startswith("/info "):
       team_name = text.split(" ")[1]
       return AdminService.get_team_info(team_name)
+    
+    if text.startswith("/verification "):
+      team_name = text.split(" ")[1]
+      return VerificationService.handle_input(msg)
 
     if text == "/scoring_system":
       return AdminService.get_scoring_system()
@@ -67,7 +73,7 @@ class Router:
     )
 
   @classmethod
-  def _route_player(cls, msg: Message) -> Message:
+  def _route_player(cls, msg: Message) -> Message | List[Message]:
     """
     Routes player messages to appropriate services.
     """
@@ -80,6 +86,8 @@ class Router:
       TeamRepo.update(team, event="member switched")
     if text == "/riddle":
       return QuestEngine.get_riddle(team_id)
-
+    riddle = RiddleRepo.get(team.cur_stage)
+    if riddle.verification_type():
+      return VerificationService.handle_input(msg)
     # otherwise - handling answer
     return QuestEngine.check_answer(team_id, msg)

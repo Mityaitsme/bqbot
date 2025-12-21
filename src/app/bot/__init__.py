@@ -6,11 +6,11 @@ functions, getting and sending back the resulting message.
 from .handlers import tg_router
 from .router import Router
 from .message_handler import MessageHandler
-from .sender import send_message
+from .sender import send_messages
 
 __all__ = [
   "tg_router",
-  "send_message",
+  "send_messages",
   "Router",
   "MessageHandler"
 ]
