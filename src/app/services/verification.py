@@ -7,6 +7,9 @@ from ..core import Message, QuestEngine
 from ..db import TeamRepo
 from ...config import ADMIN
 
+import logging
+logger = logging.getLogger(__name__)
+
 class VerificationStep(Enum):
   """
   Enumeration of verification steps.
@@ -55,6 +58,7 @@ class VerificationService:
     """
     Handles user input according to current verification step.
     """
+    logger.info("DEBUG ROUTER: Routing verification message from user_id=%s", msg.user_id)
     if msg.user_id != ADMIN:
       return cls._send_to_admin(msg)
     
@@ -107,6 +111,7 @@ class VerificationService:
                    ", где первое - верный ли ответ, второе - будет ли фидбек.",
                    _recipient_id = ADMIN)
     msg = [msg1, msg2]
+    logger.info("DEBUG ROUTER: Routing verification admin messages for users with IDs %s, %s", msg1.recipient_id, msg2.recipient_id)
     return msg
 
   @classmethod

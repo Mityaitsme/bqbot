@@ -15,6 +15,7 @@ async def send_messages(messages : Message | List[Message], bot: Optional[Bot]) 
     messages = [messages]
   
   for message in messages:
+    logger.info("DEBUG SENDER: Sending verification message for id=%s", message.recipient_id)
     if message.recipient_id is None:
       logger.error("Cannot send message without recipient_id")
       return

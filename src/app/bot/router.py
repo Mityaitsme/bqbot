@@ -5,7 +5,8 @@ from ..services import RegistrationService, VerificationService
 from ..core import QuestEngine
 from ..core import AdminService
 from ...config import ADMIN
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Router:
   """
@@ -19,6 +20,7 @@ class Router:
     """
     user_id = msg.user_id
     text = msg.text.strip()
+    logger.info("DEBUG ROUTER: Routing message from user_id=%s", user_id)
 
     # 1. Admin commands
     if cls._is_admin(user_id):
@@ -35,7 +37,8 @@ class Router:
     if isinstance(reply, Message):
       reply = [reply]
     for message in reply:
-      message.recipient_id = user_id
+      if message.recipient_id is None:
+        message.recipient_id = user_id
     return reply
 
   @staticmethod
@@ -51,6 +54,7 @@ class Router:
     Routes admin messages to appropriate services.
     """
     text = msg.text.lower()
+    logger.info("DEBUG ROUTER: Routing admin message from user_id=%s", msg.user_id)
 
     # TODO: put admin commands somewhere out of code
     if text == "/info_all":
@@ -62,6 +66,7 @@ class Router:
     
     if text.startswith("/verification "):
       team_name = text.split(" ")[1]
+      logger.info("DEBUG ROUTER: Routing verification feedback from user_id=%s", msg.user_id)
       return VerificationService.handle_input(msg)
 
     if text == "/scoring_system":
@@ -77,17 +82,19 @@ class Router:
     """
     Routes player messages to appropriate services.
     """
+    logger.info("DEBUG ROUTER: Routing player message from user_id=%s", msg.user_id)
     text = msg.text.lower()
     user = MemberRepo.get(msg.user_id)
     team_id = user.team_id
     team = TeamRepo.get(team_id)
-    if team.cur_member_id != msg.user_id:
+    if team.cur_member_id != msg.user_id and msg.user_id != ADMIN:
       team.cur_member_id = msg.user_id
       TeamRepo.update(team, event="member switched")
     if text == "/riddle":
       return QuestEngine.get_riddle(team_id)
     riddle = RiddleRepo.get(team.cur_stage)
     if riddle.verification_type():
+      logger.info("DEBUG ROUTER: Routing verification message from user_id=%s", msg.user_id)
       return VerificationService.handle_input(msg)
     # otherwise - handling answer
     return QuestEngine.check_answer(team_id, msg)
