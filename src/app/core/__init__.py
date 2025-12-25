@@ -6,7 +6,7 @@ Message, Riddle) and the core services: QuestEngine (processing user's message)
 and AdminService (processing admin's message).
 """
 
-from .basic_classes import Member, Message, Riddle, Team, FileExtension
+from .basic_classes import Member, Message, Riddle, Team, FileExtension, FileType
 from .quest_engine import QuestEngine
 from .admin_service import AdminService
 
@@ -17,5 +17,6 @@ __all__ = [
   "Team",
   "QuestEngine",
   "AdminService",
-  "FileExtension"
+  "FileExtension",
+  "FileType"
 ]

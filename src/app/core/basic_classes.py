@@ -11,6 +11,16 @@ from aiogram import Bot
 
 from ..utils import Utils, Timer
 from ...config import STAGE_COUNT
+from enum import Enum
+
+
+class FileType(str, Enum):
+  PHOTO = "photo"
+  VIDEO = "video"
+  VIDEO_NOTE = "video_note"
+  AUDIO = "audio"
+  DOCUMENT = "document"
+  STICKER = "sticker"
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,10 +29,10 @@ class FileExtension:
   Represents a file attached to a riddle or message.
   """
 
-  filename_extension: str
-  filedata: Any
+  type: FileType
   creator_id: int
-  team_id: int
+  filedata: Any | None = None
+  team_id: int | None = None
   creation_time: int = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
@@ -76,21 +86,6 @@ class Message:
   def user_id(self, id: int):
     self._user_id = id
     return
-
-  @property
-  def type(self) -> str:
-    """
-    Returns message type based on attached files.
-    """
-    if not self.files or len(self.files) == 0:
-      return "text"
-    extensions = [f.filename_extension for f in self.files]
-    if all(ext in (".mp3", ".wav") for ext in extensions):
-      return "voice"
-    elif all(ext in (".jpg", ".jpeg", ".png", ".mp4") for ext in extensions):
-      return "gallery"
-    else:
-      return "other"
   
   def copy(self) -> Message:
     return Message(

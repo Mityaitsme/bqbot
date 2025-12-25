@@ -1,35 +1,81 @@
 import logging
-from typing import List, Optional
 from aiogram import Bot
-
-from ..core import Message
-
+from aiogram.types import (
+  InputMediaPhoto,
+  InputMediaVideo,
+  InputMediaDocument,
+)
+from ..core import Message, FileType
 logger = logging.getLogger(__name__)
 
 
-async def send_messages(messages : Message | List[Message], bot: Optional[Bot]) -> None:
+async def send_messages(messages: Message | list[Message], bot):
   """
   Sends core.Message via Telegram bot.
   """
-  if type(messages) == Message:
+  if isinstance(messages, Message):
     messages = [messages]
-  
+
   for message in messages:
-    logger.info("DEBUG SENDER: Sending verification message for id=%s", message.recipient_id)
     if message.recipient_id is None:
-      logger.error("Cannot send message without recipient_id")
       return
-    
+
     # TODO: work out what to do using TGMember
-    if message.bot is not None:
-      await message.bot.send_message(
-        chat_id=message.recipient_id,
-        text=message.text,
-      )
-    else:
-      await bot.send_message(
-        chat_id=message.recipient_id,
-        text=message.text,
-      )
+    tg_bot = message.bot or bot
+
+    # ---------- MEDIA ----------
+    if message.files:
+      media = []
+      caption_used = False
+
+      for file in message.files:
+        caption = None
+        if not caption_used and message.text:
+          caption = message.text
+          caption_used = True
+
+        # ---- MEDIA GROUP ALLOWED ----
+        if file.type == FileType.PHOTO:
+          media.append(InputMediaPhoto(media=file.filedata, caption=caption))
+
+        elif file.type == FileType.VIDEO:
+          media.append(InputMediaVideo(media=file.filedata, caption=caption))
+
+        elif file.type == FileType.DOCUMENT:
+          media.append(InputMediaDocument(media=file.filedata, caption=caption))
+
+        # ---- SEPARATE SEND ----
+        elif file.type == FileType.AUDIO:
+          await tg_bot.send_voice(
+            chat_id=message.recipient_id,
+            voice=file.filedata,
+            caption=caption,
+          )
+
+        elif file.type == FileType.VIDEO_NOTE:
+          await tg_bot.send_video_note(
+            chat_id=message.recipient_id,
+            video_note=file.filedata,
+          )
+
+        elif file.type == FileType.STICKER:
+          await tg_bot.send_sticker(
+            chat_id=message.recipient_id,
+            sticker=file.filedata,
+          )
+
+      if media:
+        await tg_bot.send_media_group(
+          chat_id=message.recipient_id,
+          media=media,
+        )
+
+      continue
+
+    # ---------- TEXT ----------
+    await tg_bot.send_message(
+      chat_id=message.recipient_id,
+      text=message.text,
+    )
 
     logger.info(f"[SEND] → {message.recipient_id}: {message.text}")
