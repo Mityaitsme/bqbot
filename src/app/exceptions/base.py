@@ -26,3 +26,6 @@ class RiddleError(ApplicationError):
 
 class AnswerError(ApplicationError):
 	"""Raised when an answer cannot be validated (riddle check failed)."""
+
+class StorageError(Exception):
+  """Raised when file cannot be downloaded or uploaded for some reasons."""

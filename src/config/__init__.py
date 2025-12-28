@@ -12,6 +12,8 @@ __all__ = [
     "STAGE_COUNT",
     "DATABASE_URL",
     "START_TIME",
+    "STORAGE_ROOT",
+    "AUTO_UPLOAD",
 
     "CACHE_SIZE",
     "TEAM_CACHE_SIZE",

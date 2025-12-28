@@ -12,4 +12,5 @@ __all__ = [
 	"TeamNotFound",
 	"RiddleError",
 	"InvalidAnswerError",
+  "StorageError"
 ]

@@ -31,6 +31,7 @@ class FileExtension:
 
   type: FileType
   creator_id: int
+  filename: str | None = None
   filedata: Any | None = None
   team_id: int | None = None
   creation_time: int = field(

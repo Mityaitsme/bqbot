@@ -21,3 +21,5 @@ RIDDLE_TABLE_NAME: str = "riddle"
 # Other
 STAGE_COUNT: int = 17
 START_TIME: int = 1701369600
+STORAGE_ROOT: str = os.getenv("STORAGE_ROOT", "C:/Users/HP/bqbot/storage")
+AUTO_UPLOAD: bool = True
