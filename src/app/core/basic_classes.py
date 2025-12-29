@@ -98,17 +98,6 @@ class Message:
       _background_info=self.background_info,
       _created_at=self.created_at
     )
-  
-  @classmethod
-  def from_riddle(cls, riddle: Riddle) -> Message:
-    """
-    Creates a Message instance from a Riddle instance.
-    """
-    text = riddle.question
-    files = riddle.files
-    # TODO: background info maybe
-    created_at = Timer.now()
-    return Message(_text=text, _files=files, _created_at=created_at)
 
 
 @dataclass(slots=True, frozen=True)
@@ -119,9 +108,9 @@ class Riddle:
   For now, this field is useless.
   """
   id: int
-  question: str
+  messages: List[Message]
   answer: str
-  files: List[FileExtension] = field(default_factory=list)
+  files: List[List[FileExtension]] = field(default_factory=list)
   type: str = "db"
 
   def verification_type(self):
@@ -143,7 +132,7 @@ class Riddle:
     # a plug if the team has finished the quest and shouldn't be moved anywhere
     elif self.type == "finale":
       return False 
-    # OTHER OPTIONS IN LATER VERSIONS
+    # TODO: OTHER OPTIONS IN LATER VERSIONS
     return
 
 

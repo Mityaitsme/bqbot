@@ -7,10 +7,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Dict, List, TypeVar, Generic, Any
 from datetime import datetime, timezone, timedelta
-from ..core import Team, Member, Riddle
+from ..core import Team, Member, Riddle, Message, FileExtension, FileType
+from ..storage import EXTENSION_TO_FILETYPE, download_riddle_file
 from .db_conn import DB
 import logging
 from ...config import TEAM_TABLE_NAME, MEMBER_TABLE_NAME, RIDDLE_TABLE_NAME
+from ...config import ADMIN, RIDDLE_MESSAGE_TABLE_NAME, RIDDLE_FILE_TABLE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -196,6 +198,96 @@ class MemberQuery(Query[Member]):
     }
 
 
+class RiddleFileQuery(Query[FileExtension]):
+  """
+  Query class for riddle_file table.
+  """
+
+  table_name = RIDDLE_FILE_TABLE_NAME
+
+  @classmethod
+  def parse(cls, raw_data: Dict[str, Any]) -> FileExtension:
+    # redundant functionality, works incorrectly, shall never be used!!
+    filename = raw_data["filename"]
+    ext = filename.rsplit(".", 1)[-1].lower()
+    file_type = EXTENSION_TO_FILETYPE.get(ext, FileType.DOCUMENT)
+
+    return FileExtension(
+      type=file_type,
+      creator_id=ADMIN,
+      filename=filename,
+      filedata=None
+    )
+  
+  @classmethod
+  def parse_with_riddle_id(cls, raw_data: Dict[str, Any], riddle_id: int) -> FileExtension:
+    filename = raw_data["filename"]
+    file = download_riddle_file(riddle_id, filename)
+
+    return file
+
+  @classmethod
+  def pack(cls, file: FileExtension) -> Dict[str, Any]:
+    # redundant functionality, never to be used
+    return {
+      "filename": file.filename,
+      "message_id": -1,
+    }
+
+  @classmethod
+  def get_by_message(cls, message_id: int, riddle_id: int) -> List[FileExtension]:
+    rows = DB.select(
+      table=cls.table_name,
+      where={"message_id": message_id}
+    )
+    return [cls.parse_with_riddle_id(row, riddle_id) for row in rows]
+
+
+class RiddleMessageQuery(Query[Message]):
+  """
+  Query class for riddle_message table.
+  """
+
+  table_name = RIDDLE_MESSAGE_TABLE_NAME
+
+  @classmethod
+  def parse(cls, raw_data: Dict[str, Any]) -> Message:
+    # redundant functionality, works incorrectly, shall never be used!!
+    message_id = raw_data["id"]
+    files = RiddleFileQuery.get_by_message(message_id, -1)
+
+    return Message(
+      _text=raw_data["text"],
+      _files=files
+    )
+  
+  @classmethod
+  def parse_with_riddle_id(cls, raw_data: Dict[str, Any], riddle_id: int) -> Message:
+    message_id = raw_data["id"]
+    files = RiddleFileQuery.get_by_message(message_id, riddle_id)
+
+    return Message(
+      _text=raw_data["text"],
+      _files=files
+    )
+
+  @classmethod
+  def pack(cls, message: Message) -> Dict[str, Any]:
+    # redundant functionality, never to be used
+    return {
+      "text": message.text,
+      "riddle_id": -1
+    }
+
+  @classmethod
+  def get_by_riddle(cls, riddle_id: int) -> List[Message]:
+    rows = DB.select(
+      table=cls.table_name,
+      where={"riddle_id": riddle_id}
+    )
+    return [cls.parse_with_riddle_id(row, riddle_id) for row in rows]
+
+
 class RiddleQuery(Query[Riddle]):
   """
   Query class for Riddle database operations.
@@ -209,13 +301,14 @@ class RiddleQuery(Query[Riddle]):
     """
     Parses a raw database row (dict) into a Riddle object.
     """
-    # TODO: a more complex way to parse question into several messages & files in later versions
+    riddle_id = raw_data["id"]
+    messages = RiddleMessageQuery.get_by_riddle(riddle_id)
+
     return Riddle(
-      id=raw_data["id"],
-      question=raw_data["question"],
+      id=riddle_id,
+      messages=messages,
       answer=raw_data["answer"],
-      type=raw_data["type"],
-      files=[],
+      type=raw_data["type"]
     )
 
   @classmethod
@@ -225,7 +318,6 @@ class RiddleQuery(Query[Riddle]):
     """
     return {
       "id": riddle.id,
-      "question": riddle.question,
       "answer": riddle.answer,
       "type": riddle.type,
     }

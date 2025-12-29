@@ -22,9 +22,9 @@ class MediaGroupCollector:
     self._timeout = timeout
     self._on_ready = on_ready
 
-  def add(self, msg: TgMessage) -> Message | None:
+  async def add(self, msg: TgMessage) -> Message | None:
     if msg.media_group_id is None:
-      return MessageHandler.from_tg(msg)
+      return await MessageHandler.from_tg(msg)
 
     gid = msg.media_group_id
     self._groups[gid].append(msg)

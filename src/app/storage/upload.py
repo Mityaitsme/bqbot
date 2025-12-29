@@ -1,31 +1,32 @@
 from pathlib import Path
 
 from ..core import FileExtension
-from ..db import TeamRepo
 from .paths import TEAMS_DIR
 
+import aiofiles
+from pathlib import Path
 
-def upload_file(file: FileExtension) -> None:
-  """
-  Saves FileExtension to team storage using its filename.
-  """
+async def upload_file(file: FileExtension) -> None:
   if file.creator_id is None:
-    raise ValueError("File has no creator_id")
+    raise ValueError("File has no creator_id.")
 
   if not file.filename:
-    raise ValueError("FileExtension.filename is empty")
+    raise ValueError("File has no name.")
 
   if file.filedata is None:
-    raise ValueError("FileExtension.filedata is empty")
+    raise ValueError("File has no data in it.")
 
+  from ..db import TeamRepo
   team = TeamRepo.get_by_member(file.creator_id)
   if team is None:
     raise ValueError(f"No team found for user {file.creator_id}")
+  
+  file.filedata.seek(0)
+  save_path: Path = TEAMS_DIR / team.name / file.filename
+  save_path.parent.mkdir(parents=True, exist_ok=True)
 
-  team_dir: Path = TEAMS_DIR / team.name
-  team_dir.mkdir(parents=True, exist_ok=True)
+  async with aiofiles.open(save_path, 'wb') as f:
+    while chunk := file.filedata.read(8192):
+      await f.write(chunk)
 
-  file_path = team_dir / file.filename
-
-  with open(file_path, "wb") as out:
-    out.write(file.filedata.read())
+  file.filedata.seek(0)

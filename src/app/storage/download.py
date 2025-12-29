@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
-from typing import List
+from typing import List, Dict
 
 from ...config import ADMIN
 from ..core import FileExtension, FileType, Team
@@ -39,36 +39,32 @@ def download_team_file(team: Team, filename: str) -> FileExtension:
     additional_data="team_file",
   )
 
-def download_riddle(riddle_id: int, filenames: List[str]) -> List[FileExtension]:
+def download_riddle_file(riddle_id: int, filename: str) -> FileExtension:
   """
-  Loads all files connected to the riddle, returns a list of FileExtensions.
+  Loads a file with particular name connected to the current riddle.
+  Returns an instance of FileExtension.
   """
-  riddle_files = []
   folder = RIDDLES_DIR.resolve()
 
   # defensive from leaving STORAGE_ROOT as a root
   if ROOT not in folder.parents and folder != ROOT:
     raise ValueError("Access outside STORAGE_ROOT is forbidden")
 
-  for filename in filenames:
+  file_path = folder / str(riddle_id) / filename
 
-    file_path = folder / str(riddle_id) / filename
+  if not file_path.exists() or not file_path.is_file():
+    raise StorageError(f"File not found: {file_path}")
 
-    if not file_path.exists() or not file_path.is_file():
-      raise StorageError(f"File not found: {file_path}")
+  ext = file_path.suffix.lower()
+  file_type = EXTENSION_TO_FILETYPE.get(ext, FileType.DOCUMENT)
 
-    ext = file_path.suffix.lower()
-    file_type = EXTENSION_TO_FILETYPE.get(ext, FileType.DOCUMENT)
+  filedata = file_path.open("rb")
 
-    filedata = file_path.open("rb")
-
-    riddle_files.append(FileExtension(
-      type=file_type,
-      creator_id=ADMIN,
-      filedata=filedata,
-      filename=filename,
-      creation_time=datetime.now(timezone(timedelta(hours=3))),
-      additional_data="riddle",
-    ))
-
-  return riddle_files
+  return FileExtension(
+    type=file_type,
+    creator_id=ADMIN,
+    filedata=filedata,
+    filename=filename,
+    creation_time=datetime.now(timezone(timedelta(hours=3))),
+    additional_data="riddle",
+    )

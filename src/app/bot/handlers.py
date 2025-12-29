@@ -31,7 +31,7 @@ async def handle_message(msg: TgMessage) -> None:
   2. Route the core message to get a response.
   3. Send the response back via Telegram.
   """
-  core_msg = collector.add(msg)
+  core_msg = await collector.add(msg)
 
   if core_msg:
     response = Router.route(core_msg)

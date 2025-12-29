@@ -17,6 +17,8 @@ MEMBER_CACHE_SIZE: int = 100
 TEAM_TABLE_NAME: str = "team"
 MEMBER_TABLE_NAME: str = "member"
 RIDDLE_TABLE_NAME: str = "riddle"
+RIDDLE_MESSAGE_TABLE_NAME: str = "riddle_message"
+RIDDLE_FILE_TABLE_NAME: str = "riddle_file"
 
 # Other
 STAGE_COUNT: int = 17

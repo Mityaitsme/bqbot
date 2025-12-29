@@ -21,7 +21,7 @@ class QuestEngine:
   everything to other services.
   """
   @staticmethod
-  def get_riddle(team_id: int) -> Message | List[Message]:
+  def get_riddle(team_id: int) -> List[Message]:
     """
     Return current riddle for team by reading its stage and fetching riddle.
     """
@@ -33,8 +33,7 @@ class QuestEngine:
     if riddle is None:
       logger.exception("Error while checking answer: riddle %s not found", team.cur_stage)
       raise RiddleError(f"Riddle for stage {team.cur_stage} not found")
-    # TODO: fix when riddles will be made from several files
-    return Message.from_riddle(riddle)
+    return riddle.messages
 
   @staticmethod
   def check_answer(team_id: int, message: Message) -> Message | List[Message]:
@@ -67,15 +66,15 @@ class QuestEngine:
   def correct_answer_pipeline(team: Team) -> List[Message]:
     team.next_stage()
     TeamRepo.update(team, event="correct answer")
-    # TODO: first send the "correct!" message, then the riddle
     reply1 = Message(
       _text="Ответ верный! Переходим на следующий этап."
     )
     reply1.recipient_id = team.cur_member_id
     new_riddle = RiddleRepo.get(team.cur_stage)
-    reply2 = Message.from_riddle(new_riddle)
-    reply2.recipient_id = team.cur_member_id
-    reply = [reply1, reply2]
+    reply2 = new_riddle.messages
+    for message in reply2:
+      message.recipient_id = team.cur_member_id
+    reply = [reply1] + reply2
     return reply
   
   @staticmethod

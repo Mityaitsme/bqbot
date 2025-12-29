@@ -200,7 +200,7 @@ class RegistrationService:
       cls._contexts.pop(ctx.user_id, None)
       msg1 = Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
       cur_riddle = RiddleRepo.get(team.cur_stage)
-      return [msg1, Message.from_riddle(cur_riddle)]
+      return [msg1] + cur_riddle.messages
 
     ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
@@ -222,7 +222,7 @@ class RegistrationService:
     cls._contexts.pop(ctx.user_id, None)
     msg1 = Message(_text=f"Команда {team.name} успешно зарегистрирована!")
     cur_riddle = RiddleRepo.get(team.cur_stage)
-    return [msg1, Message.from_riddle(cur_riddle)]
+    return [msg1] + cur_riddle.messages
 
   @classmethod
   def _create_team(cls, ctx: RegistrationContext) -> Team:

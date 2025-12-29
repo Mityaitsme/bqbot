@@ -56,10 +56,9 @@ class Utils:
 
 class Timer:
   """
-  Collection of helful utilities used across the bot:
+  Collection of helful time utilities used across the bot:
     - now(): get current time in UTC+3
-    - db_conn(): decorator for DB connection handling
-    - send_message(): abstracted messaging sender (Telegram / logging / testing)
+    - time_to_int(datetime): convert datetime to integer seconds since quest start
   """
 
   @staticmethod
