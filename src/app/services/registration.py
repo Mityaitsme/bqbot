@@ -113,16 +113,26 @@ class RegistrationService:
       return None
 
   @classmethod
-  def _ask_role_message(cls) -> Message:
+  def _ask_role_message(cls) -> List[Message]:
     """
     Returns the initial message asking user to choose between joining or creating a team.
     """
-    return Message(_text=
+    msg1 = Message(_text=
+      "Привет, игрок!\n"
+      "Небольшая методичка по пользованию ботом:\n"
+      "Бот умеет принимать на вход сообщения с текстом, фото, видео, файлами, "
+      "а также кружочки, голосовые сообщения и стикеры. Остальные сообщения он, к сожалению, "
+      "не распознает, так что не стоит пытаться их отправлять.\n"
+      "/riddle - попросить условие загадки\n"
+      "И давай сразу приступать к игре!"
+    )
+    msg2 = Message(_text=
       "Вы хотите:\n"
       "1) Присоединиться к существующей команде\n"
       "2) Зарегистрировать новую команду\n\n"
       "Ответь: 1 или 2."
     )
+    return [msg1, msg2]
 
   @classmethod
   def _handle_role(cls, ctx: RegistrationContext, text: str) -> Message:
