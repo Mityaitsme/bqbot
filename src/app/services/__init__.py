@@ -5,9 +5,11 @@ versions other processes may be added (verification, notification etc.)
 
 from .registration import RegistrationService, RegistrationStep
 from .verification import VerificationService
+from .maze import MazeService
 
 __all__ = [
     "RegistrationService",
     "VerificationService",
+    "MazeService",
     "RegistrationStep" # for tests
 ]

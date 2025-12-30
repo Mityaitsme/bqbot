@@ -115,11 +115,6 @@ class Riddle:
   files: List[List[FileExtension]] = field(default_factory=list)
   type: str = "db"
 
-  def verification_type(self):
-    if self.type == "verification":
-      return True
-    return False
-
   def check_answer(self, message: Message) -> bool:
     """
     Checks whether given message is a correct answer.
@@ -132,10 +127,7 @@ class Riddle:
       return expected == got
     
     # a plug if the team has finished the quest and shouldn't be moved anywhere
-    elif self.type == "finale":
-      return False 
-    # TODO: OTHER OPTIONS IN LATER VERSIONS
-    return
+    return False
 
 
 @Utils.generate_properties()

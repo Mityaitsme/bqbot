@@ -39,7 +39,7 @@ def download_team_file(team: Team, filename: str) -> FileExtension:
     additional_data="team_file",
   )
 
-def download_riddle_file(riddle_id: int, filename: str) -> FileExtension:
+def download_riddle_file(riddle: int | str, filename: str) -> FileExtension:
   """
   Loads a file with particular name connected to the current riddle.
   Returns an instance of FileExtension.
@@ -50,7 +50,7 @@ def download_riddle_file(riddle_id: int, filename: str) -> FileExtension:
   if ROOT not in folder.parents and folder != ROOT:
     raise ValueError("Access outside STORAGE_ROOT is forbidden")
 
-  file_path = folder / str(riddle_id) / filename
+  file_path = folder / str(riddle) / filename
 
   if not file_path.exists() or not file_path.is_file():
     raise StorageError(f"File not found: {file_path}")

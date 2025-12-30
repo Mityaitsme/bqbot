@@ -16,6 +16,7 @@ __all__ = [
     "STORAGE_ROOT",
     "AUTO_UPLOAD",
     "CHARACTER_LINES",
+    "DEER_FOUND",
 
     "CACHE_SIZE",
     "TEAM_CACHE_SIZE",

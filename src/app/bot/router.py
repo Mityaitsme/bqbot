@@ -2,7 +2,7 @@ import random
 from typing import List
 from ..core import Message
 from ..db import MemberRepo, TeamRepo, RiddleRepo
-from ..services import RegistrationService, VerificationService
+from ..services import RegistrationService, VerificationService, MazeService
 from ..core import QuestEngine
 from ..core import AdminService
 from ...config import ADMIN, ADMIN_CHAT, CHARACTER_LINES
@@ -81,7 +81,6 @@ class Router:
     """
     Routes player messages to appropriate services.
     """
-    logger.info("DEBUG ROUTER: Routing player message from user_id=%s", msg.user_id)
     text = msg.text.lower()
     user = MemberRepo.get(msg.user_id)
     team_id = user.team_id
@@ -96,7 +95,14 @@ class Router:
       i = random.randint(0, len(lines) - 1)
       return Message(_text=lines[i])
     riddle = RiddleRepo.get(team.cur_stage)
-    if riddle.verification_type():
+    if riddle.type == "verification":
       return VerificationService.handle_input(msg)
+    if riddle.type == "maze":
+      return MazeService.handle_input(msg)
+    if riddle.type == "finale":
+      return Message(
+        _text="Ты прошел квест до конца, поздравляю!",
+        _recipient_id=msg.user_id,
+      )
     # otherwise - handling answer
-    return QuestEngine.check_answer(team_id, msg)
+    return QuestEngine.get_binary_answer(team_id, msg)
