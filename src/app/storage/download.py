@@ -62,7 +62,7 @@ def download_riddle_file(riddle_id: int, filename: str) -> FileExtension:
 
   return FileExtension(
     type=file_type,
-    creator_id=ADMIN,
+    creator_id=ADMIN[0],
     filedata=filedata,
     filename=filename,
     creation_time=datetime.now(timezone(timedelta(hours=3))),

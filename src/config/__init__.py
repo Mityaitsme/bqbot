@@ -9,6 +9,7 @@ from .settings import *
 __all__ = [
     "BOT_TOKEN",
     "ADMIN",
+    "ADMIN_CHAT",
     "STAGE_COUNT",
     "DATABASE_URL",
     "START_TIME",

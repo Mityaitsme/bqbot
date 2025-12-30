@@ -211,7 +211,7 @@ class RiddleFileQuery(Query[FileExtension]):
 
     return FileExtension(
       type=FileType.DOCUMENT,
-      creator_id=ADMIN,
+      creator_id=ADMIN[0],
       filename=filename,
       filedata=None
     )

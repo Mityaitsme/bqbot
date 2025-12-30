@@ -37,7 +37,7 @@ class MessageHandler:
   
   @staticmethod
   async def _maybe_upload(file: FileExtension) -> None:
-    if AUTO_UPLOAD and file.creator_id != ADMIN:
+    if AUTO_UPLOAD and file.creator_id not in ADMIN:
       await upload_file(file)
   
   @staticmethod

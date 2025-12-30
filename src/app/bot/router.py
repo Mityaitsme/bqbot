@@ -4,7 +4,7 @@ from ..db import MemberRepo, TeamRepo, RiddleRepo
 from ..services import RegistrationService, VerificationService
 from ..core import QuestEngine
 from ..core import AdminService
-from ...config import ADMIN
+from ...config import ADMIN, ADMIN_CHAT
 import logging
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class Router:
       reply = [reply]
     for message in reply:
       if message.recipient_id is None:
-        message.recipient_id = user_id
+        message.recipient_id = user_id if user_id not in ADMIN else ADMIN_CHAT
     return reply
 
   @staticmethod
@@ -45,7 +45,7 @@ class Router:
     """
     Checks if the user is an admin.
     """
-    return user_id == ADMIN
+    return user_id in ADMIN
 
   @classmethod
   def _route_admin(cls, msg: Message) -> Message | List[Message]:
@@ -83,7 +83,7 @@ class Router:
     user = MemberRepo.get(msg.user_id)
     team_id = user.team_id
     team = TeamRepo.get(team_id)
-    if team.cur_member_id != msg.user_id and msg.user_id != ADMIN:
+    if team.cur_member_id != msg.user_id and msg.user_id not in ADMIN:
       team.cur_member_id = msg.user_id
       TeamRepo.update(team, event="member switched")
     if text == "/riddle":

@@ -6,7 +6,13 @@ load_dotenv()
 
 # Telegram
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-ADMIN: int = int(os.getenv("ADMIN", "0"))
+ADMIN_CHAT = int(os.getenv("ADMIN_CHAT"))
+admins = os.getenv("ADMIN", "")
+ADMIN = [
+    int(x.strip()) 
+    for x in admins.split(",") 
+    if x.strip().isdigit()
+]
 
 # Database
 DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./test.db")

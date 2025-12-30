@@ -6,7 +6,7 @@ from typing import List
 
 from ..core import Message, QuestEngine
 from ..db import TeamRepo
-from ...config import ADMIN
+from ...config import ADMIN, ADMIN_CHAT
 
 import logging
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class VerificationService:
     """
     Handles user input according to current verification step.
     """
-    if msg.user_id != ADMIN:
+    if msg.user_id not in ADMIN:
       return cls._send_to_admin(msg)
     
     reply_text = msg.background_info.get("reply_text", None)
@@ -124,11 +124,11 @@ class VerificationService:
     cls._save_context(ctx)
     team = TeamRepo.get_by_member(msg0.user_id)
     msg1 = msg0.copy()
-    msg1.recipient_id = ADMIN
+    msg1.recipient_id = ADMIN_CHAT
 
     msg2 = Message(
       _text=f"Принять ответ команды {team.name}?",
-      _recipient_id=ADMIN,
+      _recipient_id=ADMIN_CHAT,
       _reply_markup=cls._verdict_keyboard(team.id)
     )
     return [msg1, msg2]
@@ -156,7 +156,7 @@ class VerificationService:
 
       return Message(
         _text=f"Ответьте на это сообщение, чтобы отправить фидбек команде {team.name}.",
-        _recipient_id=ADMIN,
+        _recipient_id=ADMIN_CHAT,
       )
 
     cls._contexts.pop(ctx.user_id, None)
@@ -186,7 +186,7 @@ class VerificationService:
 
     notify_admin = Message(
       _text=f"Фидбек отправлен команде {team.name}.",
-      _recipient_id=ADMIN,
+      _recipient_id=ADMIN_CHAT,
     )
 
     if verdict:

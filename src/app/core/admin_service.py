@@ -8,7 +8,7 @@ RiddleRepo) and formats Message objects that can be sent to admins.
 from __future__ import annotations
 from .basic_classes import Message
 from ..db import TeamRepo, MemberRepo
-from ...config import ADMIN
+from ...config import ADMIN_CHAT
 from ..exceptions import TeamNotFound
 
 
@@ -38,7 +38,7 @@ class AdminService:
     f"Last call time: {team.stage_call_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
     reply = Message(_text=text)
-    reply.recipient_id = ADMIN
+    reply.recipient_id = ADMIN_CHAT
     return reply
 
   @staticmethod
@@ -49,7 +49,7 @@ class AdminService:
     teams = TeamRepo.get_all()
     if not teams or len(teams) == 0:
       reply = Message(_text="No teams registered yet")
-      reply.recipient_id = ADMIN
+      reply.recipient_id = ADMIN_CHAT
       return reply
 
     lines = []
@@ -57,7 +57,7 @@ class AdminService:
       lines.append(f"{team.id}: {team.name} - stage {team.cur_stage} - score {team.score}")
     text = "All teams:\n" + "\n".join(lines)
     reply = Message(_text=text)
-    reply.recipient_id = ADMIN
+    reply.recipient_id = ADMIN_CHAT
     return reply
 
   @staticmethod
@@ -71,5 +71,5 @@ class AdminService:
       "- Each correct riddle: +1\n"
     )
     reply = Message(_text=text)
-    reply.recipient_id = ADMIN
+    reply.recipient_id = ADMIN_CHAT
     return reply
