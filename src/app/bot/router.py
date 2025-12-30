@@ -1,10 +1,11 @@
+import random
 from typing import List
 from ..core import Message
 from ..db import MemberRepo, TeamRepo, RiddleRepo
 from ..services import RegistrationService, VerificationService
 from ..core import QuestEngine
 from ..core import AdminService
-from ...config import ADMIN, ADMIN_CHAT
+from ...config import ADMIN, ADMIN_CHAT, CHARACTER_LINES
 import logging
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,10 @@ class Router:
       TeamRepo.update(team, event="member switched")
     if text == "/riddle":
       return QuestEngine.get_riddle(team_id)
+    if text.lower() in CHARACTER_LINES.keys():
+      lines = CHARACTER_LINES[text.lower()]
+      i = random.randint(0, len(lines) - 1)
+      return Message(_text=lines[i])
     riddle = RiddleRepo.get(team.cur_stage)
     if riddle.verification_type():
       return VerificationService.handle_input(msg)

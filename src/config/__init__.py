@@ -15,6 +15,7 @@ __all__ = [
     "START_TIME",
     "STORAGE_ROOT",
     "AUTO_UPLOAD",
+    "CHARACTER_LINES",
 
     "CACHE_SIZE",
     "TEAM_CACHE_SIZE",
