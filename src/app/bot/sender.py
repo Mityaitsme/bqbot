@@ -30,11 +30,12 @@ async def send_messages(messages: Message | List[Message], bot):
       media = []
       caption_used = False
 
-      for file in message.files:
+      for idx, file in enumerate(message.files):
         caption = None
         if not caption_used and message.text:
           caption = message.text
           caption_used = True
+
         file.filedata.seek(0)  # BufferedReader
         file_bytes = file.filedata.read()
         input_file = BufferedInputFile(file_bytes, filename=file.filename)
@@ -81,6 +82,7 @@ async def send_messages(messages: Message | List[Message], bot):
     await tg_bot.send_message(
       chat_id=message.recipient_id,
       text=message.text,
+      reply_markup=message.reply_markup,
     )
 
     logger.info(f"[SEND] → {message.recipient_id}: {message.text}")

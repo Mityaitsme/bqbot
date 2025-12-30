@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup
 
 from ..utils import Utils, Timer
 from ...config import STAGE_COUNT
@@ -69,6 +70,7 @@ class Message:
   _created_at: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )
+  _reply_markup: InlineKeyboardMarkup | None = None
 
   @property
   def recipient_id(self):

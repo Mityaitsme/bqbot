@@ -20,7 +20,6 @@ class Router:
     """
     user_id = msg.user_id
     text = msg.text.strip()
-    logger.info("DEBUG ROUTER: Routing message from user_id=%s", user_id)
 
     # 1. Admin commands
     if cls._is_admin(user_id):
@@ -54,7 +53,6 @@ class Router:
     Routes admin messages to appropriate services.
     """
     text = msg.text.lower()
-    logger.info("DEBUG ROUTER: Routing admin message from user_id=%s", msg.user_id)
 
     # TODO: put admin commands somewhere out of code
     if text == "/info_all":
@@ -63,14 +61,12 @@ class Router:
     if text.startswith("/info "):
       team_name = text.split(" ")[1]
       return AdminService.get_team_info(team_name)
-    
-    if text.startswith("/verification "):
-      team_name = text.split(" ")[1]
-      logger.info("DEBUG ROUTER: Routing verification feedback from user_id=%s", msg.user_id)
-      return VerificationService.handle_input(msg)
 
     if text == "/scoring_system":
       return AdminService.get_scoring_system()
+    
+    if msg.background_info.get("reply_text", None) or msg.background_info.get("type", None) == "verification_verdict":
+      return VerificationService.handle_input(msg)
 
     return Message(
       _user_id=msg.user_id,
@@ -94,7 +90,6 @@ class Router:
       return QuestEngine.get_riddle(team_id)
     riddle = RiddleRepo.get(team.cur_stage)
     if riddle.verification_type():
-      logger.info("DEBUG ROUTER: Routing verification message from user_id=%s", msg.user_id)
       return VerificationService.handle_input(msg)
     # otherwise - handling answer
     return QuestEngine.check_answer(team_id, msg)

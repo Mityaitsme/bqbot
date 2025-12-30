@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, TypeVar, Generic, Any
 from datetime import datetime, timezone, timedelta
 from ..core import Team, Member, Riddle, Message, FileExtension, FileType
-from ..storage import EXTENSION_TO_FILETYPE, download_riddle_file
 from .db_conn import DB
 import logging
 from ...config import TEAM_TABLE_NAME, MEMBER_TABLE_NAME, RIDDLE_TABLE_NAME
@@ -209,11 +208,9 @@ class RiddleFileQuery(Query[FileExtension]):
   def parse(cls, raw_data: Dict[str, Any]) -> FileExtension:
     # redundant functionality, works incorrectly, shall never be used!!
     filename = raw_data["filename"]
-    ext = filename.rsplit(".", 1)[-1].lower()
-    file_type = EXTENSION_TO_FILETYPE.get(ext, FileType.DOCUMENT)
 
     return FileExtension(
-      type=file_type,
+      type=FileType.DOCUMENT,
       creator_id=ADMIN,
       filename=filename,
       filedata=None
@@ -221,6 +218,7 @@ class RiddleFileQuery(Query[FileExtension]):
   
   @classmethod
   def parse_with_riddle_id(cls, raw_data: Dict[str, Any], riddle_id: int) -> FileExtension:
+    from ..storage import download_riddle_file
     filename = raw_data["filename"]
     file = download_riddle_file(riddle_id, filename)
 

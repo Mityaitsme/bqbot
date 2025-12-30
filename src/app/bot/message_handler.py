@@ -1,19 +1,31 @@
 import io
+from aiogram import types
+from typing import List
 from uuid import uuid4
 from ..storage import upload_file, FILETYPE_TO_EXTENSION
 from aiogram.types import Message as TgMessage
 from ..core import Message, FileExtension, FileType
 from ...config import AUTO_UPLOAD, ADMIN
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class MessageHandler:
 
   @staticmethod
   async def from_tg(msg: TgMessage) -> Message:
-    return await MessageHandler._build_message([msg])
+    if isinstance(msg, types.CallbackQuery):
+      logger.info(f"Dmitry Yakir got aiogram'd")
+      return await MessageHandler._build_callback_message(msg)
+
+    message = await MessageHandler._build_message([msg])
+    if msg.reply_to_message:
+      message.background_info["reply_text"] = msg.reply_to_message.text
+    return message
 
   @staticmethod
-  async def from_media_group(msgs: list[TgMessage]) -> Message:
+  async def from_media_group(msgs: List[TgMessage]) -> Message:
     return await MessageHandler._build_message(msgs)
   
   @staticmethod
@@ -27,10 +39,24 @@ class MessageHandler:
   async def _maybe_upload(file: FileExtension) -> None:
     if AUTO_UPLOAD and file.creator_id != ADMIN:
       await upload_file(file)
+  
+  @staticmethod
+  async def _build_callback_message(callback: TgMessage) -> Message:
+    message = Message(
+      _user_id=callback.from_user.id,
+      _text="",
+      _bot=callback.bot,
+      _background_info={}
+    )
+    callback_data = callback.data.split(":")
+    message.background_info["type"] = callback_data[0]
+    message.background_info["team_id"] = callback_data[1]
+    message.background_info["other"] = [] if len(callback_data) < 3 else callback_data[2:]
+    return message
 
   @staticmethod
-  async def _build_message(msgs: list[TgMessage]) -> Message:
-    files: list[FileExtension] = []
+  async def _build_message(msgs: List[TgMessage]) -> Message:
+    files: List[FileExtension] = []
 
     base = msgs[0]
     user_id = base.from_user.id if base.from_user else None

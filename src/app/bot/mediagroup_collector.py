@@ -45,5 +45,5 @@ class MediaGroupCollector:
     self._tasks.pop(gid, None)
 
     if msgs:
-      core_msg = MessageHandler.from_media_group(msgs)
+      core_msg = await MessageHandler.from_media_group(msgs)
       self._on_ready(core_msg)

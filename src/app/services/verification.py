@@ -1,4 +1,5 @@
 from __future__ import annotations
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import List
@@ -18,6 +19,7 @@ class VerificationStep(Enum):
   ASK_FEEDBACK = auto()
   DONE = auto()
 
+
 @dataclass
 class VerificationContext:
   """
@@ -29,6 +31,7 @@ class VerificationContext:
   verdict: bool | None = None
   feedback: bool | None = None
   feedback_msg: Message | None = None
+
 
 class VerificationService:
   """
@@ -52,22 +55,38 @@ class VerificationService:
     Checks if user's answer is currently in verification process.
     """
     return id in cls._contexts
+  
+  @classmethod
+  def _verdict_keyboard(cls, team_id: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+      [
+        InlineKeyboardButton(text="✅ Да", callback_data=f"verification_verdict:{team_id}:yes:no"),
+        InlineKeyboardButton(text="❌ Нет", callback_data=f"verification_verdict:{team_id}:no:no"),
+      ],
+      [
+        InlineKeyboardButton(text="✅💬 Да + фидбек", callback_data=f"verification_verdict:{team_id}:yes:yes"),
+        InlineKeyboardButton(text="❌💬 Нет + фидбек", callback_data=f"verification_verdict:{team_id}:no:yes"),
+      ],
+    ])
 
   @classmethod
   def handle_input(cls, msg: Message) -> Message | List[Message]:
     """
     Handles user input according to current verification step.
     """
-    logger.info("DEBUG ROUTER: Routing verification message from user_id=%s", msg.user_id)
     if msg.user_id != ADMIN:
       return cls._send_to_admin(msg)
     
-    text = msg.text
-    team = TeamRepo.get_by_name(text.split(" ")[1])
+    reply_text = msg.background_info.get("reply_text", None)
+    if reply_text:
+      team_name = reply_text.split(" ")[-1][:-1]
+      team = TeamRepo.get_by_name(team_name)
+    else:
+      team = TeamRepo.get(msg.background_info["team_id"])
     ctx = cls._load_context(team.cur_member_id)
 
     if ctx.step == VerificationStep.ASK_ADMIN:
-      return cls._handle_verdict(ctx, msg)
+      return cls._handle_callback(ctx, msg)
 
     if ctx.step == VerificationStep.ASK_FEEDBACK:
       return cls._handle_feedback(ctx, msg)
@@ -106,67 +125,70 @@ class VerificationService:
     team = TeamRepo.get_by_member(msg0.user_id)
     msg1 = msg0.copy()
     msg1.recipient_id = ADMIN
-    msg2 = Message(_text=f"Принять ответ команды {team.name}?\nОтвечай в формате\n" \
-                   "/verification [название команды] [да/нет] [да/нет]\n" \
-                   ", где первое - верный ли ответ, второе - будет ли фидбек.",
-                   _recipient_id = ADMIN)
-    msg = [msg1, msg2]
-    logger.info("DEBUG ROUTER: Routing verification admin messages for users with IDs %s, %s", msg1.recipient_id, msg2.recipient_id)
-    return msg
+
+    msg2 = Message(
+      _text=f"Принять ответ команды {team.name}?",
+      _recipient_id=ADMIN,
+      _reply_markup=cls._verdict_keyboard(team.id)
+    )
+    return [msg1, msg2]
+  
 
   @classmethod
-  def _handle_verdict(cls, ctx: VerificationContext, msg: Message) -> Message | List[Message]:
-    """
-    Handles the admin's verdict on team's answer.
-    """
-    text = msg.text
-    verdict = text.split(" ")[2].lower()
-    feedback = text.split(" ")[3].lower()
-    team = TeamRepo.get_by_member(ctx.user_id)
+  def _handle_callback(cls, ctx: VerificationContext, msg: Message) -> Message | List[Message]:
+    verdict_raw, feedback_raw = msg.background_info.get("other")
+    team_id = msg.background_info.get("team_id")
 
-    if verdict == "да":
+    team = TeamRepo.get(team_id)
+
+    if verdict_raw == "yes":
       ctx.verdict = True
-    elif verdict == "нет":
+    else:
       ctx.verdict = False
-    else:
-      return Message(_text=f"Пожалуйста, укажите вердикт по ответу {team.name}.")
-    
-    if feedback == "да":
+    if feedback_raw == "yes":
       ctx.feedback = True
-    elif feedback == "нет":
-      ctx.feedback = False
     else:
-      return Message(_text=f"Пожалуйста, укажите, будет ли фидбек по ответу {team.name}.")
+      ctx.feedback = False
 
     if ctx.feedback:
       ctx.step = VerificationStep.ASK_FEEDBACK
       cls._save_context(ctx)
-      return Message(_text=f"Пожалуйста, укажите фидбек по ответу {team.name}..\n"\
-                    "Отвечай в формате\n" \
-                    "/verification [название команды] [фидбек].\n",
-                    _recipient_id=ADMIN)
-    
-    ctx.step = VerificationStep.DONE
+
+      return Message(
+        _text=f"Ответьте на это сообщение, чтобы отправить фидбек команде {team.name}.",
+        _recipient_id=ADMIN,
+      )
+
     cls._contexts.pop(ctx.user_id, None)
+
     if ctx.verdict:
       return QuestEngine.correct_answer_pipeline(team)
     return QuestEngine.wrong_answer_pipeline(team)
     
 
   @classmethod
-  def _handle_feedback(cls, ctx: VerificationContext, msg0: Message) -> Message | List[Message]:
+  def _handle_feedback(cls, ctx: VerificationContext, msg0: Message) -> List[Message]:
     """
     Handles admin feedback on the team answer.
     """
-    ctx.step = VerificationStep.DONE
-    verdict = ctx.verdict
-    msg1 = msg0.copy()
-    msg1.recipient_id = ctx.user_id
-    msg1._text = " ".join(msg1.text.split(" ")[2:])
+    # feedback comes via reply
+    feedback_text = msg0.text
+
+    msg_to_team = Message(
+      _text=feedback_text,
+      _recipient_id=ctx.user_id,
+    )
+
     team = TeamRepo.get_by_member(ctx.user_id)
+    verdict = ctx.verdict
+
     cls._contexts.pop(ctx.user_id, None)
-    msg2 = Message(_text=f"Фидбек отправлен команде {team.name}.", _recipient_id=ADMIN)
-    msg = [msg1, msg2]
+
+    notify_admin = Message(
+      _text=f"Фидбек отправлен команде {team.name}.",
+      _recipient_id=ADMIN,
+    )
+
     if verdict:
-      return msg + QuestEngine.correct_answer_pipeline(team)
-    return msg + QuestEngine.wrong_answer_pipeline(team)
+      return [msg_to_team, notify_admin] + QuestEngine.correct_answer_pipeline(team)
+    return [msg_to_team, notify_admin] + QuestEngine.wrong_answer_pipeline(team)
