@@ -61,28 +61,29 @@ class QuestEngine:
       raise AnswerError("Failed to validate answer")
 
     if correct:
+      # extracted verdicts for this quests
       reply1 = Message(
         _text="Верно!"
       )
       reply1.recipient_id = team.cur_member_id
-      return [reply1] + QuestEngine.correct_answer_pipeline(team)
+      return QuestEngine.correct_answer_pipeline(team)
       
     # if the answer is incorrect
+    # extracted verdicts for this quests
     reply = Message(
       _text="Неверно - попробуй ещё раз."
     )
     reply.recipient_id = team.cur_member_id
-    return [reply]
+    return []
   
   @staticmethod
   def correct_answer_pipeline(team: Team) -> List[Message]:
     team.next_stage()
     TeamRepo.update(team, event="correct answer")
     new_riddle = RiddleRepo.get(team.cur_stage)
-    messages = [Message(_text="Переходим на следующий этап.")] + new_riddle.messages
-    for message in messages:
+    for message in new_riddle.messages:
       message.recipient_id = team.cur_member_id
-    return messages
+    return new_riddle.messages
   
   @staticmethod
   def wrong_answer_pipeline(team: Team) -> List[Message]:

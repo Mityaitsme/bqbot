@@ -16,7 +16,6 @@ class MazeStep(Enum):
   """
   Enumeration of maze game steps.
   """
-  ASK_START = auto()
   PLAYING = auto()
   DONE = auto()
 
@@ -76,21 +75,6 @@ class MazeService:
   }
 
   @classmethod
-  def start(cls, user_id: int) -> Message:
-    """
-    Initiates the maze game.
-    """
-    ctx = MazeContext(
-      user_id=user_id,
-      step=MazeStep.ASK_START
-    )
-    cls._save_context(ctx)
-    
-    return Message(
-      _text="Напиши координаты клетки, с которой хочешь начать."
-    )
-
-  @classmethod
   def _clear_contexts(cls) -> None:
     cls._contexts.clear()
     return
@@ -109,10 +93,7 @@ class MazeService:
     ctx = cls._load_context(user_id)
 
     if ctx is None:
-      return cls.start(user_id)
-
-    if ctx.step == MazeStep.ASK_START:
-      return cls._handle_start_coord(ctx, text)
+      return cls._handle_start_coord(msg)
 
     if ctx.step == MazeStep.PLAYING:
       return cls._handle_move_command(ctx, text)
@@ -131,11 +112,15 @@ class MazeService:
       return None
 
   @classmethod
-  def _handle_start_coord(cls, ctx: MazeContext, text: str) -> Message:
+  def _handle_start_coord(cls, msg: Message) -> Message:
     """
     Parses initial coordinates like 'B4'.
     """
-    coords = cls._parse_coordinates(text)
+    ctx = MazeContext(
+      user_id=msg.user_id,
+      step=MazeStep.PLAYING
+    )
+    coords = cls._parse_coordinates(msg.text)
     if not coords:
       return Message(_text="Неверный формат. Используй английскую букву (A-E) и цифру (1-5). " \
                            "Например: B4")
@@ -143,14 +128,14 @@ class MazeService:
     x, y = coords
     ctx.x = x
     ctx.y = y
-    ctx.step = MazeStep.PLAYING
     
     status_msg = cls._process_cell_events(ctx)
     if isinstance(status_msg, Message):
       status_msg = [status_msg]
 
-    messages = [Message(_text=f"Ты приземлился в клетку {text}.")]
+    messages = [Message(_text=f"Ты приземлился в клетку {msg.text}.")]
     messages = messages + status_msg
+    cls._save_context(ctx)
     return messages
 
   @classmethod
@@ -246,12 +231,12 @@ class MazeService:
         ctx.x, ctx.y = ctx.x + dx, ctx.y + dy
         cell = cls._get_cell(ctx.x, ctx.y)
       if cell["end"]:
-        messages.append(Message(_text="Ты проскользил до конца ледяной дорожки."))
+        messages.append(Message(_text="Ты проскользил до конца ледяной горки."))
       cls._save_context(ctx)
       return messages
 
     cls._save_context(ctx)
-    return Message(_text="Вокруг тихий лес.")
+    return Message(_text="Ты стоишь на обычной лесной полянке.")
     
 
 
