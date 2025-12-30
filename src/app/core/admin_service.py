@@ -45,18 +45,55 @@ class AdminService:
   def get_all_teams_info() -> Message:
     """
     Get brief info about all registered teams.
+    Sorted by:
+    1. Score (DESC - highest first)
+    2. Time of arrival (ASC - earliest first)
     """
     teams = TeamRepo.get_all()
     if not teams or len(teams) == 0:
-      reply = Message(_text="No teams registered yet")
+      reply = Message(_text="No teams registered yet.")
       reply.recipient_id = ADMIN_CHAT
       return reply
+    teams.sort(key=lambda t: (-t.score, t.stage_call_time))
+
+    max_name_len = max((len(t.name) for t in teams), default=4)
+    name_width = min(max_name_len, 15)
+
+    # {rank:^2} centered
+    # {name:^W} centered
+    # {score:^5} centered
+    # {stage:^5} centered
+    # {time:^17} centered
+    row_fmt = f"{{rank:^2}} | {{name:^{name_width}}} | {{score:^5}} | {{stage:^5}} | {{time:^17}}"
 
     lines = []
-    for team in teams:
-      lines.append(f"{team.id}: {team.name} - stage {team.cur_stage} - score {team.score}")
-    text = "All teams:\n" + "\n".join(lines)
-    reply = Message(_text=text)
+    
+    # header
+    header = row_fmt.format(rank="#", name="Team", score="Score", stage="Stage", time="Arrived at")
+    lines.append(header)
+    # separator
+    lines.append("-" * len(header))
+
+    # data
+    for i, team in enumerate(teams, 1):
+      # cut if it's too long
+      display_name = team.name
+      if len(display_name) > name_width:
+          display_name = display_name[:name_width-1] + "…"
+      
+      time_str = team.stage_call_time.strftime("%H:%M:%S %D")
+      
+      lines.append(row_fmt.format(
+          rank=i, 
+          name=display_name,
+          score=team.score,
+          stage=team.cur_stage,
+          time=time_str
+      ))
+
+    # all to one markdown code block
+    table_text = "🏆 Leaderboard:" + "<pre>" + "\n".join(lines) + "</pre>"
+    reply = Message(_text=table_text)
     reply.recipient_id = ADMIN_CHAT
     return reply
 
@@ -69,6 +106,22 @@ class AdminService:
     text = (
       "Scoring system:\n"
       "- Each correct riddle: +1\n"
+    )
+    reply = Message(_text=text)
+    reply.recipient_id = ADMIN_CHAT
+    return reply
+  
+  @staticmethod
+  def get_help() -> Message:
+    """
+    Returns a manual for admins which contains all commands available for admins.
+    """
+    text = (
+      "Available commands:\n"
+      "/help - returns admin manual with all existing commands;\n"
+      "/info [team_name] - returns all data about the chosen team;\n"
+      "/info_all - gets general data anout all team sorted by score;\n"
+      "/scoring_system - gets info about the scoring system."
     )
     reply = Message(_text=text)
     reply.recipient_id = ADMIN_CHAT

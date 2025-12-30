@@ -55,22 +55,25 @@ class Router:
     text = msg.text.lower()
 
     # TODO: put admin commands somewhere out of code
-    if text == "/info_all":
+    if text.split("@")[0] == "/info_all":
       return AdminService.get_all_teams_info()
 
     if text.startswith("/info "):
       team_name = text.split(" ")[1]
       return AdminService.get_team_info(team_name)
 
-    if text == "/scoring_system":
+    if text.split("@")[0] == "/scoring_system":
       return AdminService.get_scoring_system()
+    
+    if text.split("@")[0] == "/help":
+      return AdminService.get_help()
     
     if msg.background_info.get("reply_text", None) or msg.background_info.get("type", None) == "verification_verdict":
       return VerificationService.handle_input(msg)
 
     return Message(
       _user_id=msg.user_id,
-      _text="Неизвестная админ-команда",
+      _text="Неизвестная админ-команда.",
     )
 
   @classmethod
