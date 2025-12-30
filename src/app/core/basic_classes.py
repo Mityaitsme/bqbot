@@ -66,7 +66,7 @@ class Message:
   _recipient_id: Optional[int] = None
   _bot: Optional[Bot] = None
   _files: List[FileExtension] = field(default_factory=list)
-  _background_info: Dict[str, str] = field(default_factory=dict)
+  _background_info: Dict[str, Any] = field(default_factory=dict)
   _created_at: datetime = field(
     default_factory=lambda: datetime.now(timezone(timedelta(hours=3)))
   )

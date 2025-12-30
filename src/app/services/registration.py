@@ -11,6 +11,7 @@ class RegistrationStep(Enum):
   """
   Enumeration of registration steps.
   """
+  ASK_NAME = auto()
   ASK_ROLE = auto()
   ASK_TEAM_NAME = auto()
   CONFIRM_TEAM_NAME = auto()
@@ -28,6 +29,8 @@ class RegistrationContext:
   mode: Literal["join", "create"] | None = None
   team_name: str | None = None
   password_hash: str | None = None
+  player_name: str | None = None
+  tg_nickname: str | None = None
 
 class RegistrationService:
   """
@@ -38,7 +41,7 @@ class RegistrationService:
   _contexts: dict[int, RegistrationContext] = {}
 
   @classmethod
-  def _start(cls, user_id: int) -> Message:
+  def _start(cls, user_id: int, tg_nickname: str) -> Message | List[Message]:
     """
     Initiates registration for a user.
     """
@@ -47,10 +50,21 @@ class RegistrationService:
 
     ctx = RegistrationContext(
       user_id=user_id,
-      step=RegistrationStep.ASK_ROLE,
+      step=RegistrationStep.ASK_NAME,
+      tg_nickname=tg_nickname
     )
     cls._save_context(ctx)
-    return cls._ask_role_message()
+    msg1 = Message(
+          _text="Привет! Добро пожаловать в игру.\n\n"
+                "Сразу небольшая методичка по пользованию ботом:\n"
+                "Бот умеет принимать на вход сообщения с текстом, фото, видео, файлами, "
+                "а также кружочки, голосовые сообщения и стикеры. Остальные сообщения он, к сожалению, "
+                "не распознает, так что не стоит пытаться их отправлять.\n"
+                "/riddle - попросить условие загадки.\n")
+    msg2 = Message(
+          _text = "Всё понятно? Тогда давай знакомиться! Как тебя зовут?"
+          )
+    return [msg1, msg2]
   
   @classmethod
   def _clear_contexts(cls) -> None:
@@ -68,14 +82,21 @@ class RegistrationService:
     return id in cls._contexts
 
   @classmethod
-  def handle_input(cls, user_id: int, text: str) -> Message:
+  def handle_input(cls, msg: Message) -> Message:
     """
     Handles user input according to current registration step.
     """
+    text = msg.text
+    user_id = msg.user_id
     ctx = cls._load_context(user_id)
+    text = msg.text
 
     if ctx is None:
-      return cls._start(user_id)
+      tg_nickname = msg.background_info.get("tg_nickname")
+      return cls._start(user_id, tg_nickname)
+
+    if ctx.step == RegistrationStep.ASK_NAME:
+      return cls._handle_name(ctx, text)
 
     if ctx.step == RegistrationStep.ASK_ROLE:
       return cls._handle_role(ctx, text)
@@ -113,23 +134,29 @@ class RegistrationService:
       return None
 
   @classmethod
-  def _ask_role_message(cls) -> List[Message]:
+  def _handle_name(cls, ctx: RegistrationContext, text: str) -> List[Message]:
+    name = text.strip()
+    ctx.player_name = name
+    ctx.step = RegistrationStep.ASK_ROLE
+    cls._save_context(ctx)
+    return cls._ask_role_message(name)
+
+  @classmethod
+  def _ask_role_message(cls, name: str) -> List[Message]:
     """
-    Returns the initial message asking user to choose between joining or creating a team.
+    Returns the message asking user to choose between joining or creating a team.
     """
+    if len(name) == 0:
+      return Message(_text="Пожалуйста, введи имя :)")
     msg1 = Message(_text=
-      "Привет, игрок!\n\n"
-      "Небольшая методичка по пользованию ботом:\n"
-      "Бот умеет принимать на вход сообщения с текстом, фото, видео, файлами, "
-      "а также кружочки, голосовые сообщения и стикеры. Остальные сообщения он, к сожалению, "
-      "не распознает, так что не стоит пытаться их отправлять.\n"
-      "/riddle - попросить условие загадки.\n\n"
-      "И давай сразу приступать к игре!"
+      f"Приятно познакомиться, {name}!\n"
+       "Давай сразу приступать к игре!"
     )
     msg2 = Message(_text=
-      "Вы хотите:\n"
+      "Ты хочешь:\n"
       "1) Присоединиться к существующей команде\n"
-      "2) Зарегистрировать новую команду\n\n"
+      "или\n"
+      "2) Зарегистрировать новую команду ?\n\n"
       "Ответь: 1 или 2."
     )
     return [msg1, msg2]
@@ -145,11 +172,11 @@ class RegistrationService:
     elif text == "2":
       ctx.mode = "create"
     else:
-      return Message(_text="Пожалуйста, ответьте 1 или 2")
+      return Message(_text="Пожалуйста, ответь 1 или 2")
 
     ctx.step = RegistrationStep.ASK_TEAM_NAME
     cls._save_context(ctx)
-    return Message(_text="Введите имя команды:")
+    return Message(_text="Введи имя команды:")
 
   @classmethod
   def _handle_team_name(cls, ctx: RegistrationContext, text: str) -> Message:
@@ -161,20 +188,20 @@ class RegistrationService:
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(team_name)
       if not team:
-        return Message(_text="Команда с таким именем не найдена. Попробуйте ещё раз:")
+        return Message(_text="Команда с таким именем не найдена. Попробуй ещё раз:")
       ctx.team_name = team_name
       ctx.step = RegistrationStep.ASK_PASSWORD
       cls._save_context(ctx)
-      return Message(_text="Введите пароль:")
+      return Message(_text="Введи пароль:")
 
     team = TeamRepo.get_by_name(team_name)
     if team is not None:
-      return Message(_text="К сожалению, это имя уже занято. Попробуйте какое-нибудь другое.")
+      return Message(_text="К сожалению, это имя уже занято. Попробуй какое-нибудь другое.")
     ctx.team_name = team_name
     ctx.step = RegistrationStep.CONFIRM_TEAM_NAME
     cls._save_context(ctx)
     # herringbone quotation because otherwise the line would be split in two
-    return Message(_text=f"Подтвердите имя команды «{team_name}»? (да / нет)")
+    return Message(_text=f"Подтверди имя команды: «{team_name}»? (да / нет)")
 
   @classmethod
   def _handle_team_name_confirm(cls, ctx: RegistrationContext, text: str) -> Message:
@@ -182,16 +209,16 @@ class RegistrationService:
     Handles confirmation of team name.
     """
     if text.lower() not in ("да", "нет"):
-      return Message(_text="Ответьте «да» или «нет»")
+      return Message(_text="Ответь «да» или «нет», пожалуйста")
 
     if text.lower() == "нет":
       ctx.step = RegistrationStep.ASK_TEAM_NAME
       cls._save_context(ctx)
-      return Message(_text="Тогда введитете имя команды ещё раз, пожалуйста:")
+      return Message(_text="Тогда введи имя команды ещё раз, пожалуйста:")
 
     ctx.step = RegistrationStep.ASK_PASSWORD
     cls._save_context(ctx)
-    return Message(_text="Введите пароль:")
+    return Message(_text="Введи пароль:")
 
   @classmethod
   def _handle_password(cls, ctx: RegistrationContext, text: str) -> List[Message]:
@@ -203,19 +230,19 @@ class RegistrationService:
       team = TeamRepo.get_by_name(ctx.team_name)
 
       if not team.verify_password(text):
-        return Message(_text="Неверный пароль. Попробуйте ещё раз:")
+        return Message(_text="Неверный пароль. Попробуй ещё раз:")
 
       cls._create_member(ctx, team)
       ctx.step = RegistrationStep.DONE
       cls._contexts.pop(ctx.user_id, None)
-      msg1 = Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
+      msg1 = Message(_text=f"Ты успешно вошел в команду {ctx.team_name}!")
       cur_riddle = RiddleRepo.get(team.cur_stage)
       return [msg1] + cur_riddle.messages
 
     ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
     cls._save_context(ctx)
-    return Message(_text="Повторите пароль:")
+    return Message(_text="Повтори пароль:")
 
   @classmethod
   def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> List[Message]:
@@ -223,7 +250,7 @@ class RegistrationService:
     Handles password confirmation.
     """
     if not Utils.verify_password(text, ctx.password_hash):
-      return Message(_text="Пароли не совпадают. Введите пароль ещё раз:")
+      return Message(_text="Пароли не совпадают. Введи пароль ещё раз:")
 
     team = cls._create_team(ctx)
     cls._create_member(ctx, team)
@@ -254,11 +281,10 @@ class RegistrationService:
     """
     Creates new member in DB and cache.
     """
-    # TODO: insert real name and nickname in later versions
     member = Member(
       id=ctx.user_id,
-      tg_nickname="",
-      name="",
+      tg_nickname=ctx.tg_nickname,
+      name=ctx.player_name,
       team_id=team.id,
     )
     MemberRepo.insert(member)

@@ -16,7 +16,6 @@ class MessageHandler:
   @staticmethod
   async def from_tg(msg: TgMessage) -> Message:
     if isinstance(msg, types.CallbackQuery):
-      logger.info(f"Dmitry Yakir got aiogram'd")
       return await MessageHandler._build_callback_message(msg)
 
     message = await MessageHandler._build_message([msg])
@@ -53,6 +52,14 @@ class MessageHandler:
     message.background_info["team_id"] = callback_data[1]
     message.background_info["other"] = [] if len(callback_data) < 3 else callback_data[2:]
     return message
+  
+  @staticmethod
+  def _get_tg_nickname(msg: TgMessage) -> str:
+    if msg.from_user.username:
+      return f"@{msg.from_user.username}"
+    elif msg.from_user.first_name:
+      return msg.from_user.first_name
+    return f"user_{msg.from_user.id}"
 
   @staticmethod
   async def _build_message(msgs: List[TgMessage]) -> Message:
@@ -60,6 +67,7 @@ class MessageHandler:
 
     base = msgs[0]
     user_id = base.from_user.id if base.from_user else None
+    tg_nickname = MessageHandler._get_tg_nickname(base)
 
     for msg in msgs:
 
@@ -171,4 +179,5 @@ class MessageHandler:
       _text=base.text or base.caption or "",
       _bot=base.bot,
       _files=files,
+      _background_info = {"tg_nickname": tg_nickname}
     )

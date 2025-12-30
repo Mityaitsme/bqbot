@@ -19,7 +19,6 @@ class Router:
     Routes messages to appropriate services depending on context.
     """
     user_id = msg.user_id
-    text = msg.text.strip()
 
     # 1. Admin commands
     if cls._is_admin(user_id):
@@ -27,7 +26,7 @@ class Router:
 
     # 2. Registration
     elif MemberRepo.get(user_id) is None:
-      reply = RegistrationService.handle_input(user_id, text)
+      reply = RegistrationService.handle_input(msg)
 
     # 3. Regular player
     else:
