@@ -52,7 +52,7 @@ class Router:
     """
     Routes admin messages to appropriate services.
     """
-    text = msg.text.lower()
+    text = msg.text
 
     # TODO: put admin commands somewhere out of code
     if text.split("@")[0] == "/info_all":
