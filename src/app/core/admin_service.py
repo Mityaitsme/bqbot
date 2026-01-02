@@ -121,6 +121,7 @@ class AdminService:
       "/help - returns admin manual with all existing commands;\n"
       "/info [team_name] - returns all data about the chosen team;\n"
       "/info_all - gets general data anout all team sorted by score;\n"
+      "/cancel - restart verification (in case of making mistakes);\n"
       "/scoring_system - gets info about the scoring system."
     )
     reply = Message(_text=text)

@@ -127,7 +127,7 @@ class VerificationService:
     msg1.recipient_id = ADMIN_CHAT
 
     msg2 = Message(
-      _text=f"Принять ответ команды {team.name}?",
+      _text=f"(id загадки: {team.cur_stage})\nПринять ответ команды {team.name}?",
       _recipient_id=ADMIN_CHAT,
       _reply_markup=cls._verdict_keyboard(team.id)
     )
@@ -159,9 +159,13 @@ class VerificationService:
         _recipient_id=ADMIN_CHAT,
       )
 
+    notify_admin = Message(
+      _text=f"Вердикт отправлен команде {team.name}.",
+      _recipient_id=ADMIN_CHAT,
+    )
     cls._contexts.pop(ctx.user_id, None)
 
-    return QuestEngine.get_binary_answer(team_id, msg, ctx.verdict)
+    return QuestEngine.get_binary_answer(team_id, msg, ctx.verdict) + [notify_admin]
 
   @classmethod
   def _handle_feedback(cls, ctx: VerificationContext, msg0: Message) -> List[Message]:
@@ -170,6 +174,8 @@ class VerificationService:
     """
     # feedback comes via reply
     feedback_text = msg0.text
+    if feedback_text == '/cancel':
+      return VerificationService._send_to_admin(ctx.msg)
 
     msg_to_team = Message(
       _text=feedback_text,
