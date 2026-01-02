@@ -98,7 +98,8 @@ class Message:
       _bot=self.bot,
       _files=self.files,
       _background_info=self.background_info,
-      _created_at=self.created_at
+      _created_at=self.created_at,
+      _reply_markup=self._reply_markup
     )
 
 

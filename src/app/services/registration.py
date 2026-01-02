@@ -62,6 +62,9 @@ class RegistrationService:
                 "Бот умеет принимать на вход сообщения с текстом, фото, видео, файлами, "
                 "а также кружочки, голосовые сообщения и стикеры. Остальные сообщения он, к сожалению, "
                 "не распознает, так что не стоит пытаться их отправлять.\n"
+                "Также важно заметить, что бот не может обработать слишком тяжелые файлы. Если вы " \
+                "пытаетесь отправить длинное видео, а бот не воспринимает ваши попытки - " \
+                "рассмотрите возможность записать кружочек вместо видео.\n\n"
                 "/riddle - попросить условие загадки.\n"
                 "/start - перезапустить регистрацию (если вы допустили ошибку при ней; работает "
                 "только во время регистрации).\n"
@@ -240,7 +243,10 @@ class RegistrationService:
       cls._contexts.pop(ctx.user_id, None)
       msg1 = Message(_text=f"Ты успешно вошел в команду {ctx.team_name}!")
       cur_riddle = RiddleRepo.get(team.cur_stage)
-      return [msg1] + cur_riddle.messages
+      messages = [msg.copy() for msg in cur_riddle.messages] 
+      for msg in messages:
+          msg.recipient_id = ctx.user_id # Теперь меняем только в своей локальной копии
+      return [msg1] + messages
 
     ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
@@ -266,6 +272,9 @@ class RegistrationService:
     cls._contexts.pop(ctx.user_id, None)
     msg1 = Message(_text=f"Команда {team.name} успешно зарегистрирована!")
     cur_riddle = RiddleRepo.get(team.cur_stage)
+    messages = [msg.copy() for msg in cur_riddle.messages] 
+    for msg in messages:
+        msg.recipient_id = ctx.user_id # Теперь меняем только в своей локальной копии
     return [msg1] + cur_riddle.messages
 
   @classmethod

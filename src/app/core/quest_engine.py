@@ -33,7 +33,10 @@ class QuestEngine:
     if riddle is None:
       logger.exception("Error while checking answer: riddle %s not found", team.cur_stage)
       raise RiddleError(f"Riddle for stage {team.cur_stage} not found")
-    return riddle.messages
+    messages = [msg.copy() for msg in riddle.messages] 
+    for msg in messages:
+        msg.recipient_id = team.cur_member_id # Теперь меняем только в своей локальной копии
+    return messages
 
   @staticmethod
   def get_binary_answer(team_id: int, message: Message, verdict: bool | None = None) -> List[Message]:
@@ -82,9 +85,10 @@ class QuestEngine:
     TeamRepo.update(team, event="correct answer")
     # "next stage..." message if required
     new_riddle = RiddleRepo.get(team.cur_stage)
-    for message in new_riddle.messages:
-      message.recipient_id = team.cur_member_id
-    return new_riddle.messages
+    messages = [msg.copy() for msg in new_riddle.messages] 
+    for msg in messages:
+        msg.recipient_id = team.cur_member_id # Теперь меняем только в своей локальной копии
+    return messages
   
   @staticmethod
   def wrong_answer_pipeline(team: Team) -> List[Message]:
