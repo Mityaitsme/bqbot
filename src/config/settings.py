@@ -12,7 +12,7 @@ admins = os.getenv("ADMIN", "")
 ADMIN = [
   int(x.strip()) 
   for x in admins.split(",") 
-  if x.strip().isdigit()
+  if x.strip().lstrip('-').isdigit() and x.strip() not in ['', '-']
 ]
 
 # Database

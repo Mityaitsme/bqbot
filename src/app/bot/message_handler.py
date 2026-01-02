@@ -16,13 +16,15 @@ class MessageHandler:
 
   @staticmethod
   async def from_tg(msg: TgMessage) -> Message:
+    if isinstance(msg, types.CallbackQuery):
+      # ВАЖНО: ТУТ РЕАЛИЗОВАНО ИГНОРИРОВАНИЕ НЕНУЖНОГО ТОПИКА
+      if msg.message and msg.message.message_thread_id and msg.message.message_thread_id != TARGET_TOPIC_ID:
+        return
+      return await MessageHandler._build_callback_message(msg)
+
     # ВАЖНО: ТУТ РЕАЛИЗОВАНО ИГНОРИРОВАНИЕ НЕНУЖНОГО ТОПИКА
     if msg.message_thread_id and msg.message_thread_id != TARGET_TOPIC_ID:
       return
-    logger.info(f"[HANDLER] CHAT_ID: {msg.chat.id}")
-    if isinstance(msg, types.CallbackQuery):
-      return await MessageHandler._build_callback_message(msg)
-
     message = await MessageHandler._build_message([msg])
     if msg.reply_to_message:
       message.background_info["reply_text"] = msg.reply_to_message.text
