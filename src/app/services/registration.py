@@ -61,6 +61,8 @@ class RegistrationService:
                 "а также кружочки, голосовые сообщения и стикеры. Остальные сообщения он, к сожалению, "
                 "не распознает, так что не стоит пытаться их отправлять.\n"
                 "/riddle - попросить условие загадки.\n"
+                "/start - перезапустить регистрацию (если вы допустили ошибку при ней; работает "
+                "только во время регистрации).\n"
                 "/[имя персонажа] - поговорить с персонажем квеста (пример: /Санта).\n")
     msg2 = Message(
           _text = "Всё понятно? Тогда давай знакомиться!\n"
@@ -97,7 +99,9 @@ class RegistrationService:
     ctx = cls._load_context(user_id)
     text = msg.text
 
-    if ctx is None:
+    if ctx is None or text == '/start':
+      if ctx:
+        cls._contexts.pop(ctx.user_id, None)
       tg_nickname = msg.background_info.get("tg_nickname")
       return cls._start(user_id, tg_nickname)
 
