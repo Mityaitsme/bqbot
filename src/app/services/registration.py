@@ -39,6 +39,8 @@ class RegistrationService:
   """
 
   _contexts: dict[int, RegistrationContext] = {}
+  # [CHANGED] Добавлен set для временного хранения зарезервированных имен команд
+  _reserved_names: set[str] = set()
 
   @classmethod
   def _start(cls, user_id: int, tg_nickname: str) -> Message | List[Message]:
@@ -50,7 +52,7 @@ class RegistrationService:
 
     ctx = RegistrationContext(
       user_id=user_id,
-      step=RegistrationStep.ASK_NAME,
+      step=RegistrationStep.ASK_ROLE,
       tg_nickname=tg_nickname
     )
     cls._save_context(ctx)
@@ -65,12 +67,10 @@ class RegistrationService:
                 "только во время регистрации).\n"
                 "/[имя персонажа] - поговорить с персонажем квеста (пример: /Санта).\n")
     msg2 = Message(
-          _text = "Всё понятно? Тогда давай знакомиться!\n"
-                  "Придумай себе какое-нибудь прикольное новогоднее имя. Чтобы сразу всё "
-                  "стало чуть более праздничным! Я вот, например, "
-                  "Целеустремлённая Снежинка с узорами в форме страусов! :) "
-                  "А ты придумай что-нибудь своё. И постарайся не копировать: чем "
-                  "необычнее имя, тем веселее!"
+          _text = "Всё понятно? Тогда давай приступать к игре!\n"
+                  "Ты хочешь <b><u>присоединиться к существующей команде (1)</u></b> или "
+                  "<b><u>зарегистрировать новую команду (2)</u></b> ?\n"
+                  "Ответь: 1 или 2."
           )
     return [msg1, msg2]
   
@@ -80,6 +80,8 @@ class RegistrationService:
     Deletes everything from the local _contexts dictionary.
     """
     cls._contexts.clear()
+    # [CHANGED] Очищаем также зарезервированные имена
+    cls._reserved_names.clear()
     return
 
   @classmethod
@@ -101,12 +103,12 @@ class RegistrationService:
 
     if ctx is None or text == '/start':
       if ctx:
+        # [CHANGED] Если пользователь перезапускает регистрацию, нужно освободить занятое имя (если было)
+        if ctx.mode == "create" and ctx.team_name in cls._reserved_names:
+          cls._reserved_names.remove(ctx.team_name)
         cls._contexts.pop(ctx.user_id, None)
       tg_nickname = msg.background_info.get("tg_nickname")
       return cls._start(user_id, tg_nickname)
-
-    if ctx.step == RegistrationStep.ASK_NAME:
-      return cls._handle_name(ctx, text)
 
     if ctx.step == RegistrationStep.ASK_ROLE:
       return cls._handle_role(ctx, text)
@@ -144,32 +146,6 @@ class RegistrationService:
       return None
 
   @classmethod
-  def _handle_name(cls, ctx: RegistrationContext, text: str) -> List[Message]:
-    name = text.strip()
-    ctx.player_name = name
-    ctx.step = RegistrationStep.ASK_ROLE
-    cls._save_context(ctx)
-    return cls._ask_role_message(name)
-
-  @classmethod
-  def _ask_role_message(cls, name: str) -> List[Message]:
-    """
-    Returns the message asking user to choose between joining or creating a team.
-    """
-    if len(name) == 0:
-      return Message(_text="Пожалуйста, введи имя :)")
-    msg1 = Message(_text=
-      f"Приятно познакомиться, {name}!\n"
-       "Давай сразу приступать к игре!"
-    )
-    msg2 = Message(_text=
-      "Ты хочешь <b><u>присоединиться к существующей команде (1)</u></b> или "
-      "<b><u>зарегистрировать новую команду (2)</u></b> ?\n"
-      "Ответь: 1 или 2."
-    )
-    return [msg1, msg2]
-
-  @classmethod
   def _handle_role(cls, ctx: RegistrationContext, text: str) -> Message:
     """
     Handles if the user wants to register or join a team.
@@ -177,14 +153,23 @@ class RegistrationService:
 
     if text == "1":
       ctx.mode = "join"
+      ctx.step = RegistrationStep.ASK_TEAM_NAME
+      cls._save_context(ctx)
+      return Message(_text=
+                    "Хорошо! Тогда введите имя команды, пожалуйста:"
+                    )
     elif text == "2":
       ctx.mode = "create"
-    else:
-      return Message(_text="Пожалуйста, ответь 1 или 2")
+      ctx.step = RegistrationStep.ASK_TEAM_NAME
+      cls._save_context(ctx)
+      return Message(_text=
+                    "Отлично!\nНовую команду нужно как-нибудь назвать. "
+                    "Придумай ей какое-нибудь прикольное новогоднее имя, чтобы сразу всё "
+                    "стало чуть более праздничным! Чем необычнее имя, тем веселее :)"
+                    )
 
-    ctx.step = RegistrationStep.ASK_TEAM_NAME
-    cls._save_context(ctx)
-    return Message(_text="Введи имя команды:")
+    return Message(_text="Пожалуйста, ответь 1 или 2")
+
 
   @classmethod
   def _handle_team_name(cls, ctx: RegistrationContext, text: str) -> Message:
@@ -202,9 +187,13 @@ class RegistrationService:
       cls._save_context(ctx)
       return Message(_text="Введи пароль:")
 
+    # [CHANGED] Проверка: занято ли имя уже в БД ИЛИ находится в процессе регистрации
     team = TeamRepo.get_by_name(team_name)
-    if team is not None:
+    if team is not None or team_name in cls._reserved_names:
       return Message(_text="К сожалению, это имя уже занято. Попробуй какое-нибудь другое.")
+    
+    # [CHANGED] Временно резервируем имя
+    cls._reserved_names.add(team_name)
     ctx.team_name = team_name
     ctx.step = RegistrationStep.CONFIRM_TEAM_NAME
     cls._save_context(ctx)
@@ -220,10 +209,16 @@ class RegistrationService:
       return Message(_text="Ответь «да» или «нет», пожалуйста")
 
     if text.lower() == "нет":
+      # [CHANGED] Если пользователь отказался, удаляем имя из резерва
+      if ctx.team_name in cls._reserved_names:
+        cls._reserved_names.remove(ctx.team_name)
+      ctx.team_name = None # Очищаем имя в контексте
+      
       ctx.step = RegistrationStep.ASK_TEAM_NAME
       cls._save_context(ctx)
       return Message(_text="Тогда введи имя команды ещё раз, пожалуйста:")
 
+    # Если "да" - имя остается в _reserved_names до конца регистрации
     ctx.step = RegistrationStep.ASK_PASSWORD
     cls._save_context(ctx)
     return Message(_text="Введи пароль:")
@@ -262,6 +257,10 @@ class RegistrationService:
 
     team = cls._create_team(ctx)
     cls._create_member(ctx, team)
+
+    # [CHANGED] Регистрация успешна, удаляем имя из резерва (теперь оно есть в БД)
+    if ctx.team_name in cls._reserved_names:
+      cls._reserved_names.remove(ctx.team_name)
 
     ctx.step = RegistrationStep.DONE
     cls._contexts.pop(ctx.user_id, None)
