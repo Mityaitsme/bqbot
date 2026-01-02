@@ -69,12 +69,13 @@ class DB:
     Makes an INSERT query to the database via SQLAlchemy
     """
     with DB.session() as session:
-      columns = ", ".join(values.keys())
-      placeholders = ", ".join(f":{k}" for k in values.keys())
+      clean_values = {k: v for k, v in values.items() if v is not None}
+      columns = ", ".join(clean_values.keys())
+      placeholders = ", ".join(f":{k}" for k in clean_values.keys())
       sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders}) RETURNING id"
 
-      logger.debug(f"SQL INSERT: {sql} | values={values}")
-      result = session.execute(text(sql), values)
+      logger.debug(f"SQL INSERT: {sql} | values={clean_values}")
+      result = session.execute(text(sql), clean_values)
       return result.scalar_one()
 
   @staticmethod

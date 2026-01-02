@@ -17,6 +17,8 @@ __all__ = [
     "AUTO_UPLOAD",
     "CHARACTER_LINES",
     "DEER_FOUND",
+    "MAX_FILE_SIZE_MB",
+    "TARGET_TOPIC_ID"
 
     "CACHE_SIZE",
     "TEAM_CACHE_SIZE",

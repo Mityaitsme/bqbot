@@ -71,15 +71,16 @@ class QuestEngine:
     # if the answer is incorrect
     # extracted verdicts for this quests
     reply = Message(
-      _text="Неверно - попробуй ещё раз."
+      _text="Неверно - попробуй ещё раз..."
     )
     reply.recipient_id = team.cur_member_id
-    return []
+    return [reply]
   
   @staticmethod
   def correct_answer_pipeline(team: Team) -> List[Message]:
     team.next_stage()
     TeamRepo.update(team, event="correct answer")
+    # "next stage..." message if required
     new_riddle = RiddleRepo.get(team.cur_stage)
     for message in new_riddle.messages:
       message.recipient_id = team.cur_member_id

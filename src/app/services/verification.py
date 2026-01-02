@@ -74,19 +74,15 @@ class VerificationService:
     """
     Handles user input according to current verification step.
     """
-    logger.info(f"HELLO THERE")
     if msg.user_id not in ADMIN:
       return cls._send_to_admin(msg)
     
     reply_text = msg.background_info.get("reply_text", None)
-    logger.info(f"reply text: {reply_text}")
     if reply_text:
       team_name = reply_text.split("команде ")[1][:-1]
-      logger.info(f"team name: {team_name}")
       team = TeamRepo.get_by_name(team_name)
     else:
       team = TeamRepo.get(msg.background_info["team_id"])
-      logger.info(f"team name: {team.name}")
     ctx = cls._load_context(team.cur_member_id)
 
     if ctx.step == VerificationStep.ASK_ADMIN:
