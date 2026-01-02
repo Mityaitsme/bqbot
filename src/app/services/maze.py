@@ -154,8 +154,6 @@ class MazeService:
       dx = -1
     elif text in ("вправо", "d", "right"):
       dx = 1
-    elif text in ("на месте", "0", "stay"):
-      pass
     else:
       return Message(_text="Непонятное направление. Используй: вверх, вниз, влево, вправо.")
     
