@@ -15,23 +15,29 @@ logger = logging.getLogger(__name__)
 class MessageHandler:
 
   @staticmethod
-  async def from_tg(msg: TgMessage) -> Message:
+  async def from_tg(msg: TgMessage) -> Optional[Message]: # [CHANGED] Return type hint update
     if isinstance(msg, types.CallbackQuery):
       # ВАЖНО: ТУТ РЕАЛИЗОВАНО ИГНОРИРОВАНИЕ НЕНУЖНОГО ТОПИКА
       if msg.message and msg.message.message_thread_id and msg.message.message_thread_id != TARGET_TOPIC_ID:
-        return
+        return None
       return await MessageHandler._build_callback_message(msg)
 
     # ВАЖНО: ТУТ РЕАЛИЗОВАНО ИГНОРИРОВАНИЕ НЕНУЖНОГО ТОПИКА
     if msg.message_thread_id and msg.message_thread_id != TARGET_TOPIC_ID:
-      return
+      return None
+    
     message = await MessageHandler._build_message([msg])
+    
+    # [CHANGED] Если _build_message вернул None (неподдерживаемый формат), выходим
+    if message is None:
+      return None
+
     if msg.reply_to_message:
       message.background_info["reply_text"] = msg.reply_to_message.text
     return message
 
   @staticmethod
-  async def from_media_group(msgs: List[TgMessage]) -> Message:
+  async def from_media_group(msgs: List[TgMessage]) -> Optional[Message]: # [CHANGED] Return type hint update
     return await MessageHandler._build_message(msgs)
   
   @staticmethod
@@ -93,7 +99,7 @@ class MessageHandler:
       return None
 
   @staticmethod
-  async def _build_message(msgs: List[TgMessage]) -> Message:
+  async def _build_message(msgs: List[TgMessage]) -> Optional[Message]: # [CHANGED] Return type Optional
     files: List[FileExtension] = []
 
     base = msgs[0]
@@ -199,9 +205,19 @@ class MessageHandler:
           await MessageHandler._maybe_upload(file)
           files.append(file)
 
+    text_content = base.text or base.caption or ""
+
+    # [CHANGED] Проверка на неподдерживаемый формат (нет ни файлов, ни текста)
+    if not files and not text_content:
+      try:
+        await base.reply("Простите, такой формат сообщений не поддерживается.")
+      except Exception as e:
+        logger.error(f"Failed to reply to unsupported format: {e}")
+      return None
+
     return Message(
       _user_id=user_id,
-      _text=base.text or base.caption or "",
+      _text=text_content,
       _bot=base.bot,
       _files=files,
       _background_info = {"tg_nickname": tg_nickname}
