@@ -4,6 +4,7 @@ from logging.config import dictConfig
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiohttp import web
 
 from .app.bot import tg_router
 from .config import BOT_TOKEN
@@ -32,6 +33,19 @@ LOGGING_CONFIG = {
   },
 }
 
+# [ADD] Функция-заглушка, чтобы Render думал, что это сайт
+async def health_check(request):
+  return web.Response(text="Bot is alive!")
+
+async def start_dummy_server():
+  app = web.Application()
+  app.add_routes([web.get('/', health_check)])
+  runner = web.AppRunner(app)
+  await runner.setup()
+  # Render передает порт через переменную окружения PORT
+  port = int(os.environ.get("PORT", 8080)) 
+  site = web.TCPSite(runner, '0.0.0.0', port)
+  await site.start()
 
 def setup_logging() -> None:
   dictConfig(LOGGING_CONFIG)
