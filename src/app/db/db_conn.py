@@ -58,6 +58,7 @@ class DB:
           params[key] = value
         sql += " WHERE " + " AND ".join(conditions)
 
+      sql += " ORDER BY id ASC"
       logger.debug(f"SQL SELECT: {sql} | params={params}")
 
       result = session.execute(text(sql), params)

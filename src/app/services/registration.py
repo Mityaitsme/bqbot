@@ -181,6 +181,9 @@ class RegistrationService:
     """
     team_name = text.strip()
 
+    if not team_name or len(team_name) == 0:
+      return Message(_text="Вы ничего не ввели. Пожалуйста, введите название команды:")
+
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(team_name)
       if not team:
@@ -231,6 +234,10 @@ class RegistrationService:
     """
     Handles password input.
     """
+    
+    text = text.strip()
+    if not text or len(text) == 0:
+      return Message(_text="Вы ничего не ввели. Пожалуйста, введите пароль:")
 
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(ctx.team_name)
