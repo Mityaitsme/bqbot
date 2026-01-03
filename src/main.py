@@ -1,4 +1,5 @@
 import asyncio
+import os # [CHANGED] Добавлен импорт os
 from logging.config import dictConfig
 
 from aiogram import Bot, Dispatcher
@@ -62,6 +63,12 @@ async def main() -> None:
   dp = Dispatcher()
 
   dp.include_router(tg_router)
+
+  # [CHANGED] Обязательно запускаем сервер ПЕРЕД поллингом
+  await start_dummy_server()
+
+  # Удаляем вебхук на всякий случай, чтобы не было конфликтов
+  await bot.delete_webhook(drop_pending_updates=True)
 
   await dp.start_polling(bot)
 
