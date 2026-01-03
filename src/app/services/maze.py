@@ -98,7 +98,7 @@ class MazeService:
     if ctx.step == MazeStep.PLAYING:
       return cls._handle_move_command(ctx, text)
     
-    return Message(_text="Ты уже прошел лабиринт.")
+    return Message(_text="Вы уже прошли лабиринт.")
 
   @classmethod
   def _save_context(cls, ctx: MazeContext) -> None:
@@ -122,7 +122,7 @@ class MazeService:
     )
     coords = cls._parse_coordinates(msg.text)
     if not coords:
-      return Message(_text="Неверный формат. Используй английскую букву (A-E) и цифру (1-5). " \
+      return Message(_text="Неверный формат. Используйте английскую букву (A-E) и цифру (1-5). " \
                            "Например: B4")
     
     x, y = coords
@@ -133,7 +133,7 @@ class MazeService:
     if isinstance(status_msg, Message):
       status_msg = [status_msg]
 
-    messages = [Message(_text=f"Ты приземлился в клетку {msg.text}.")]
+    messages = [Message(_text=f"Вы приземлились в клетку {msg.text}.")]
     messages = messages + status_msg
     cls._save_context(ctx)
     return messages
@@ -155,7 +155,7 @@ class MazeService:
     elif text in ("вправо", "d", "right"):
       dx = 1
     else:
-      return Message(_text="Непонятное направление. Используй: вверх, вниз, влево, вправо.")
+      return Message(_text="Непонятное направление. Используйте: вверх, вниз, влево, вправо.")
     
     curr_pos = (ctx.x, ctx.y)
     new_x, new_y = ctx.x + dx, ctx.y + dy
@@ -169,7 +169,7 @@ class MazeService:
     
     # 2. Check if there is a border
     if not (0 <= new_x < 5 and 0 <= new_y < 5) or cls._has_wall(curr_pos, next_pos):
-      return Message(_text="Ты уперся в деревья! Густые ёлки не пускают тебя.")
+      return Message(_text="Вы уперлись в деревья! Густые ёлки не пускают вас.")
 
     # 2. Update position
     ctx.x = new_x
@@ -183,9 +183,9 @@ class MazeService:
     if ctx.found_key1 and ctx.found_key2:
       team = TeamRepo.get_by_member(ctx.user_id)
       cls._contexts.pop(ctx.user_id, None)
-      messages = [Message(_text="Ура, ты выбрался из леса с оленями и санями!")]
+      messages = [Message(_text="Ура, вы выбрались из леса с оленями и санями!")]
       return messages + QuestEngine.correct_answer_pipeline(team)
-    return Message(_text="Ты нашел выход! Но уходить рано. Нужно найти и оленей, и сани.")
+    return Message(_text="Вы нашли выход! Но уходить рано. Нужно найти и оленей, и сани.")
 
   @classmethod
   def _process_cell_events(cls, ctx: MazeContext) -> Message | List[Message]:
@@ -200,7 +200,7 @@ class MazeService:
         ctx.found_key1 = True
         cls._save_context(ctx)
         messages = [Message(
-          _text="Ура! Ты нашел Оленей (🦌)!",
+          _text="Ура! Вы нашли Оленей (🦌)!",
           _files=[download_riddle_file("maze", "deer.jpg")]
           )]
         return messages + [Message(_text=text) for text in DEER_FOUND]
@@ -210,7 +210,7 @@ class MazeService:
         ctx.found_key2 = True
         cls._save_context(ctx)
         return Message(
-          _text="Отлично! Ты нашел Сани (🛷)! Только они, кажется, сломанные...",
+          _text="Отлично! Вы нашли Сани (🛷)! Только они, кажется, сломанные...",
           _files=[download_riddle_file("maze", "sleigh.jpg")]
           )
 
@@ -218,23 +218,23 @@ class MazeService:
       next_portal = cell["next"]
       ctx.x, ctx.y = next_portal
       cls._save_context(ctx)
-      return Message(_text="Ой! Ты провалился в магический сугроб и очутился в другом!")
+      return Message(_text="Ой! Вы провалились в магический сугроб и очутились в другом!")
 
     if c_type == "river":
       slid_dist = random.randint(1, 2)
       messages = []
-      messages.append(Message(_text="Осторожно, лёд! Ты скользишь..."))
+      messages.append(Message(_text="Осторожно, лёд! Вы скользите..."))
       for i in range(slid_dist):
         dx, dy = cell["dir"]
         ctx.x, ctx.y = ctx.x + dx, ctx.y + dy
         cell = cls._get_cell(ctx.x, ctx.y)
       if cell["end"]:
-        messages.append(Message(_text="Ты проскользил до конца ледяной горки."))
+        messages.append(Message(_text="Вы проскользили до конца ледяной горки."))
       cls._save_context(ctx)
       return messages
 
     cls._save_context(ctx)
-    return Message(_text="Ты стоишь на обычной лесной полянке.")
+    return Message(_text="Вы стоите на обычной лесной полянке.")
     
 
 

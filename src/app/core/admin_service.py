@@ -51,7 +51,7 @@ class AdminService:
     """
     teams = TeamRepo.get_all()
     if not teams or len(teams) == 0:
-      reply = Message(_text="No teams registered yet.")
+      reply = Message(_text="Пока что ни одна команда не зарегистрировалась.")
       reply.recipient_id = ADMIN_CHAT
       return reply
     teams.sort(key=lambda t: (-t.score, t.stage_call_time))

@@ -74,7 +74,7 @@ class QuestEngine:
     # if the answer is incorrect
     # extracted verdicts for this quests
     reply = Message(
-      _text="Неверно - попробуй ещё раз..."
+      _text="Неверно - попробуйте ещё раз..."
     )
     reply.recipient_id = team.cur_member_id
     return [reply]

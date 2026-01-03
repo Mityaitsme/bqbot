@@ -101,7 +101,7 @@ class Router:
       return MazeService.handle_input(msg)
     if riddle.type == "finale":
       return Message(
-        _text="Ты прошел квест до конца, поздравляю!",
+        _text="Вы прошли квест до конца, поздравляю!",
         _recipient_id=msg.user_id,
       )
     # otherwise - handling answer

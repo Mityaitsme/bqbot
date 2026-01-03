@@ -167,11 +167,11 @@ class RegistrationService:
       cls._save_context(ctx)
       return Message(_text=
                     "Отлично!\nНовую команду нужно как-нибудь назвать. "
-                    "Придумай ей какое-нибудь прикольное новогоднее имя, чтобы сразу всё "
+                    "Придумайте ей какое-нибудь прикольное новогоднее имя, чтобы сразу всё "
                     "стало чуть более праздничным! Чем необычнее имя, тем веселее :)"
                     )
 
-    return Message(_text="Пожалуйста, ответь 1 или 2")
+    return Message(_text="Пожалуйста, ответьте 1 или 2")
 
 
   @classmethod
@@ -187,16 +187,16 @@ class RegistrationService:
     if ctx.mode == "join":
       team = TeamRepo.get_by_name(team_name)
       if not team:
-        return Message(_text="Команда с таким именем не найдена. Попробуй ещё раз:")
+        return Message(_text="Команда с таким именем не найдена. Попробуйте ещё раз:")
       ctx.team_name = team_name
       ctx.step = RegistrationStep.ASK_PASSWORD
       cls._save_context(ctx)
-      return Message(_text="Введи пароль:")
+      return Message(_text="Введите пароль:")
 
     # [CHANGED] Проверка: занято ли имя уже в БД ИЛИ находится в процессе регистрации
     team = TeamRepo.get_by_name(team_name)
     if team is not None or team_name in cls._reserved_names:
-      return Message(_text="К сожалению, это имя уже занято. Попробуй какое-нибудь другое.")
+      return Message(_text="К сожалению, это имя уже занято. Попробуйте какое-нибудь другое.")
     
     # [CHANGED] Временно резервируем имя
     cls._reserved_names.add(team_name)
@@ -204,7 +204,7 @@ class RegistrationService:
     ctx.step = RegistrationStep.CONFIRM_TEAM_NAME
     cls._save_context(ctx)
     # herringbone quotation because otherwise the line would be split in two
-    return Message(_text=f"Подтверди имя команды: «{team_name}»? (да / нет)")
+    return Message(_text=f"Подтвердите имя команды: «{team_name}»? (да / нет)")
 
   @classmethod
   def _handle_team_name_confirm(cls, ctx: RegistrationContext, text: str) -> Message:
@@ -212,7 +212,7 @@ class RegistrationService:
     Handles confirmation of team name.
     """
     if text.lower() not in ("да", "нет"):
-      return Message(_text="Ответь «да» или «нет», пожалуйста")
+      return Message(_text="Ответьте «да» или «нет», пожалуйста.")
 
     if text.lower() == "нет":
       # [CHANGED] Если пользователь отказался, удаляем имя из резерва
@@ -222,12 +222,12 @@ class RegistrationService:
       
       ctx.step = RegistrationStep.ASK_TEAM_NAME
       cls._save_context(ctx)
-      return Message(_text="Тогда введи имя команды ещё раз, пожалуйста:")
+      return Message(_text="Тогда введите имя команды ещё раз, пожалуйста:")
 
     # Если "да" - имя остается в _reserved_names до конца регистрации
     ctx.step = RegistrationStep.ASK_PASSWORD
     cls._save_context(ctx)
-    return Message(_text="Введи пароль:")
+    return Message(_text="Введите пароль:")
 
   @classmethod
   def _handle_password(cls, ctx: RegistrationContext, text: str) -> List[Message]:
@@ -243,12 +243,12 @@ class RegistrationService:
       team = TeamRepo.get_by_name(ctx.team_name)
 
       if not team.verify_password(text):
-        return Message(_text="Неверный пароль. Попробуй ещё раз:")
+        return Message(_text="Неверный пароль. Попробуйте ещё раз:")
 
       cls._create_member(ctx, team)
       ctx.step = RegistrationStep.DONE
       cls._contexts.pop(ctx.user_id, None)
-      msg1 = Message(_text=f"Ты успешно вошел в команду {ctx.team_name}!")
+      msg1 = Message(_text=f"Вы успешно вошли в команду {ctx.team_name}!")
       cur_riddle = RiddleRepo.get(team.cur_stage)
       messages = [msg.copy() for msg in cur_riddle.messages] 
       for msg in messages:
@@ -258,7 +258,7 @@ class RegistrationService:
     ctx.password_hash = Utils.hash(text)
     ctx.step = RegistrationStep.ASK_PASSWORD_REPEAT
     cls._save_context(ctx)
-    return Message(_text="Повтори пароль:")
+    return Message(_text="Повторите пароль:")
 
   @classmethod
   def _handle_password_repeat(cls, ctx: RegistrationContext, text: str) -> List[Message]:
@@ -266,7 +266,7 @@ class RegistrationService:
     Handles password confirmation.
     """
     if not Utils.verify_password(text, ctx.password_hash):
-      return Message(_text="Пароли не совпадают. Введи пароль ещё раз:")
+      return Message(_text="Пароли не совпадают. Введите пароль ещё раз:")
 
     team = cls._create_team(ctx)
     cls._create_member(ctx, team)
