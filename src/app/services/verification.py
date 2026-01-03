@@ -177,10 +177,8 @@ class VerificationService:
     if feedback_text == '/cancel':
       return VerificationService._send_to_admin(ctx.msg)
 
-    msg_to_team = Message(
-      _text=feedback_text,
-      _recipient_id=ctx.user_id,
-    )
+    msg_to_team = msg0.copy()
+    msg_to_team.recipient_id=ctx.user_id
 
     team = TeamRepo.get_by_member(ctx.user_id)
     verdict = ctx.verdict
